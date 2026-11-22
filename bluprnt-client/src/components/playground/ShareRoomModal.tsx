@@ -36,6 +36,9 @@ export const ShareRoomModal: React.FC<ShareRoomModalProps> = ({
   };
 
   const isOwner = userRole === 'owner';
+  const isVercel = typeof window !== 'undefined' && window.location.hostname.endsWith('vercel.app');
+  const hasExternalWs = !!(import.meta as any).env?.VITE_COLLAB_WS_URL;
+  const isOfflineMode = roomId.endsWith('-local') || (isVercel && !hasExternalWs);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
@@ -56,6 +59,18 @@ export const ShareRoomModal: React.FC<ShareRoomModalProps> = ({
             <X className="w-5 h-5" />
           </button>
         </div>
+
+        {/* Offline / Vercel WebSockets Advisory */}
+        {isOfflineMode && (
+          <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-2xl text-[11px] text-amber-700 dark:text-amber-300 space-y-1">
+            <span className="font-bold flex items-center gap-1.5">
+              <span>ℹ️</span> Standalone Local Room
+            </span>
+            <p className="opacity-90 leading-relaxed">
+              Your canvas edits are preserved locally in IndexedDB. Live multi-user WebSockets are not supported by Vercel serverless. To enable cross-device multiplayer, deploy our 1-click Docker container to <strong>Render</strong> / <strong>Railway</strong>, or set <code className="bg-amber-500/20 px-1 py-0.5 rounded text-[10px]">VITE_COLLAB_WS_URL</code> in Vercel.
+            </p>
+          </div>
+        )}
 
         {/* Invite Link Row */}
         <div className="space-y-2">

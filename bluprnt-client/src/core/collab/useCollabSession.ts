@@ -96,53 +96,75 @@ export function useCollabSession(roomId: string | null, userEmail: string, initi
     const indexeddbProvider = new IndexeddbPersistence(`bluprnt-room-${roomId}`, doc);
     persistenceRef.current = indexeddbProvider;
 
-    // 2. WebSocket Connection to BluPrnt Collab Gateway (dynamic host detection or env override)
+    // Check if room is offline-local or if running on Vercel without an external WebSocket server
+    const isLocalRoom = roomId.endsWith('-local') || roomId.startsWith('local-');
+    const isVercel = typeof window !== 'undefined' && window.location.hostname.endsWith('vercel.app');
     const envWsUrl = (import.meta as any).env?.VITE_COLLAB_WS_URL;
-    const isDevPort = window.location.port === '3000' || window.location.port === '5173' || window.location.port === '3001';
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsHost = isDevPort ? 'localhost:4000' : window.location.host;
-    const wsUrl = envWsUrl || `${protocol}//${wsHost}/collab`;
-    const provider = new WebsocketProvider(wsUrl, roomId, doc, {
-      params: {
-        userId: userEmail || 'anonymous',
-        name: localUser.current.name,
-        role: initialRole,
-      },
-    });
-    providerRef.current = provider;
+    const shouldConnectWs = !isLocalRoom && (!isVercel || !!envWsUrl);
 
-    provider.on('status', (event: { status: 'connected' | 'connecting' | 'disconnected' }) => {
-      if (event.status === 'connected') setStatus('connected');
-      else if (event.status === 'connecting') setStatus('connecting');
-      else setStatus('offline');
-    });
+    let provider: WebsocketProvider | null = null;
 
-    // 3. Setup Awareness & Presence
-    const awareness = provider.awareness;
-    awareness.setLocalStateField('user', localUser.current);
+    if (shouldConnectWs) {
+      // 2. WebSocket Connection to BluPrnt Collab Gateway (dynamic host detection or env override)
+      const isDevPort = window.location.port === '3000' || window.location.port === '5173' || window.location.port === '3001';
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsHost = isDevPort ? 'localhost:4000' : window.location.host;
+      const wsUrl = envWsUrl || `${protocol}//${wsHost}/collab`;
 
-    const updatePresence = () => {
-      const states = awareness.getStates();
-      const peerList: PeerPresence[] = [];
-      const selections: Record<string, { name: string; color: string }> = {};
+      try {
+        provider = new WebsocketProvider(wsUrl, roomId, doc, {
+          params: {
+            userId: userEmail || 'anonymous',
+            name: localUser.current.name,
+            role: initialRole,
+          },
+        });
+        providerRef.current = provider;
 
-      states.forEach((state: any, clientId: number) => {
-        if (state.user && clientId !== awareness.clientID) {
-          peerList.push({ clientId, user: state.user });
-          if (state.user.selectedNodeId) {
-            selections[state.user.selectedNodeId] = {
-              name: state.user.name,
-              color: state.user.color,
-            };
-          }
-        }
-      });
+        provider.on('status', (event: { status: 'connected' | 'connecting' | 'disconnected' }) => {
+          if (event.status === 'connected') setStatus('connected');
+          else if (event.status === 'connecting') setStatus('connecting');
+          else setStatus('offline');
+        });
 
-      setPeers(peerList);
-      setRemoteSelections(selections);
-    };
+        // 3. Setup Awareness & Presence
+        const awareness = provider.awareness;
+        awareness.setLocalStateField('user', localUser.current);
 
-    awareness.on('change', updatePresence);
+        const updatePresence = () => {
+          const states = awareness.getStates();
+          const peerList: PeerPresence[] = [];
+          const selections: Record<string, { name: string; color: string }> = {};
+
+          states.forEach((state: any, clientId: number) => {
+            if (state.user && clientId !== awareness.clientID) {
+              peerList.push({ clientId, user: state.user });
+              if (state.user.selectedNodeId) {
+                selections[state.user.selectedNodeId] = {
+                  name: state.user.name,
+                  color: state.user.color,
+                };
+              }
+            }
+          });
+
+          setPeers(peerList);
+          setRemoteSelections(selections);
+        };
+
+        awareness.on('change', updatePresence);
+      } catch (err) {
+        console.warn('[BluPrnt] WebSocket connection skipped or unavailable:', err);
+        setStatus('offline');
+      }
+    } else {
+      setStatus('offline');
+      if (isVercel && !envWsUrl) {
+        console.info(
+          '[BluPrnt] Running in standalone local mode. To enable real-time WebSockets on Vercel, set VITE_COLLAB_WS_URL in Vercel environment variables, or host on Render/Railway.'
+        );
+      }
+    }
 
     // 4. Scoped UndoManager (Only tracks my changes via localOriginRef)
     const nodesMap = doc.getMap('nodes');
@@ -201,7 +223,7 @@ export function useCollabSession(roomId: string | null, userEmail: string, initi
     settingsMap.observe(handleSettingsChange);
 
     return () => {
-      provider.destroy();
+      provider?.destroy();
       indexeddbProvider.destroy();
       doc.destroy();
     };
