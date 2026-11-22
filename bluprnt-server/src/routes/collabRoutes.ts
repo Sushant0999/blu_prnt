@@ -44,7 +44,7 @@ collabRouter.post('/create-room', (req: Request, res: Response): void => {
 /**
  * Get room metadata & member list.
  */
-collabRouter.get('/room/:roomId', (req: Request, res: Response): void => {
+collabRouter.get(['/room/:roomId', '/room/:roomId/info'], (req: Request, res: Response): void => {
   const roomId = req.params.roomId as string;
   const userEmail = req.query.email as string;
 
@@ -64,6 +64,7 @@ collabRouter.get('/room/:roomId', (req: Request, res: Response): void => {
     members: session.record.members,
     snapshots: session.record.snapshots,
     userRole: role,
+    role: role,
     isOwnerPro: isPro,
   });
 });

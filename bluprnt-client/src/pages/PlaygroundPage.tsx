@@ -270,12 +270,12 @@ export const PlaygroundPage: React.FC = () => {
 
   // Fetch room metadata & member roles from server if in collab mode
   const refreshRoomMeta = useCallback(async () => {
-    if (!activeRoomId) return;
+    if (!activeRoomId || activeRoomId.endsWith('-local') || activeRoomId.startsWith('local-')) return;
     try {
       const res = await fetch(`${API_BASE}/api/collab/room/${activeRoomId}/info?email=${encodeURIComponent(userEmail)}`);
       if (res.ok) {
         const data = await res.json();
-        setRole(data.role);
+        setRole(data.role || data.userRole || 'editor');
         setRoomMembers(data.members || {});
         setSnapshots(data.snapshots || []);
       }

@@ -14,11 +14,21 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 4000;
 
-// Enable CORS for client
+// Enable CORS for client (support cross-origin requests from Vercel to Render)
 app.use(cors({
   origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-request-id'],
 }));
+app.options('*', cors());
+
+// Fallback CORS headers on all responses
+app.use((_req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-request-id');
+  next();
+});
 
 // Capture raw body for Stripe webhook verification before json middleware
 app.use(express.json({
