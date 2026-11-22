@@ -218,7 +218,10 @@ export const PlaygroundPage: React.FC = () => {
     sendChatMessage,
     undo,
     redo,
+    userName,
+    setUserName,
     localUserName,
+    localUserColor,
   } = useCollabSession(activeRoomId, userEmail);
 
   // Sync Y.Doc <-> React Flow state when in collaboration mode
@@ -1341,6 +1344,9 @@ export const PlaygroundPage: React.FC = () => {
               role={userRole}
               peers={peers}
               commentCount={comments.length}
+              userName={userName}
+              userColor={localUserColor}
+              onUpdateUserName={setUserName}
               onOpenShare={() => setShareModalOpen(true)}
               onToggleChat={() => setChatDrawerOpen(!chatDrawerOpen)}
               onOpenHistory={() => setHistoryModalOpen(true)}
@@ -1348,13 +1354,33 @@ export const PlaygroundPage: React.FC = () => {
               onRedo={redo}
             />
           ) : (
-            <button
-              onClick={handleStartCollab}
-              className="h-8.5 flex items-center gap-1.5 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-sm transition-all shrink-0"
-            >
-              <Users className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Live Room</span>
-            </button>
+            <div className="flex items-center gap-1.5 shrink-0">
+              <button
+                onClick={() => {
+                  const newName = prompt('Enter your display name:', userName);
+                  if (newName && newName.trim()) {
+                    setUserName(newName.trim());
+                  }
+                }}
+                className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700 text-xs text-slate-300 transition"
+                title="Change display name"
+              >
+                <div
+                  className="w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold text-white shrink-0"
+                  style={{ backgroundColor: localUserColor }}
+                >
+                  {userName.charAt(0).toUpperCase()}
+                </div>
+                <span className="max-w-[70px] truncate font-semibold text-[11px]">{userName}</span>
+              </button>
+              <button
+                onClick={handleStartCollab}
+                className="h-8.5 flex items-center gap-1.5 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-sm transition-all shrink-0"
+              >
+                <Users className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Live Room</span>
+              </button>
+            </div>
           )}
         </div>
       </div>
@@ -1518,6 +1544,8 @@ export const PlaygroundPage: React.FC = () => {
             inviteToken={inviteToken}
             userRole={userRole}
             members={roomMembers}
+            userName={userName}
+            onUpdateUserName={setUserName}
             serializedSnapshot={serializeTopology(currentNodes, currentEdges, targetRps)}
             onUpdateRole={async (targetUserId, newRole) => {
               await fetch(`${API_BASE}/api/collab/room/${activeRoomId}/role`, {

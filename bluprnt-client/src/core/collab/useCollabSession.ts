@@ -68,6 +68,24 @@ export function useCollabSession(roomId: string | null, userEmail: string, initi
     runInfo: SharedSimulationRun;
   } | null>(null);
 
+  const getInitialName = () => {
+    try {
+      const saved = localStorage.getItem('bluprnt_user_name');
+      if (saved && saved.trim()) return saved.trim();
+    } catch {}
+    if (userEmail && userEmail !== 'engineer@example.com') {
+      return userEmail.split('@')[0];
+    }
+    const rand = Math.floor(Math.random() * 900 + 100);
+    const generated = `Architect_${rand}`;
+    try {
+      localStorage.setItem('bluprnt_user_name', generated);
+    } catch {}
+    return generated;
+  };
+
+  const [userName, setUserNameState] = useState<string>(getInitialName);
+
   const wsProviderRef = useRef<WebsocketProvider | null>(null);
   const webrtcProviderRef = useRef<WebrtcProvider | null>(null);
   const persistenceRef = useRef<IndexeddbPersistence | null>(null);
@@ -76,7 +94,7 @@ export function useCollabSession(roomId: string | null, userEmail: string, initi
 
   // Stable local user identity
   const localUser = useRef<CollabUser>({
-    name: userEmail ? userEmail.split('@')[0] : `Guest_${Math.floor(Math.random() * 900 + 100)}`,
+    name: userName,
     color: PEER_COLORS[Math.floor(Math.random() * PEER_COLORS.length)],
     role: initialRole,
     cursor: null,
@@ -86,6 +104,18 @@ export function useCollabSession(roomId: string | null, userEmail: string, initi
   useEffect(() => {
     localUser.current.role = role;
   }, [role]);
+
+  const updateUserName = useCallback((newName: string) => {
+    const trimmed = newName.trim() || `Architect_${Math.floor(Math.random() * 900 + 100)}`;
+    setUserNameState(trimmed);
+    localUser.current.name = trimmed;
+    try {
+      localStorage.setItem('bluprnt_user_name', trimmed);
+    } catch {}
+    const userPayload = { ...localUser.current, name: trimmed };
+    wsProviderRef.current?.awareness.setLocalStateField('user', userPayload);
+    webrtcProviderRef.current?.awareness.setLocalStateField('user', userPayload);
+  }, []);
 
   // Connect to Y.Doc, IndexedDB and WebSocket / WebRTC Server
   useEffect(() => {
@@ -420,7 +450,9 @@ export function useCollabSession(roomId: string | null, userEmail: string, initi
     sendChatMessage,
     undo,
     redo,
-    localUserName: localUser.current.name,
+    userName,
+    setUserName: updateUserName,
+    localUserName: userName,
     localUserColor: localUser.current.color,
   };
 }

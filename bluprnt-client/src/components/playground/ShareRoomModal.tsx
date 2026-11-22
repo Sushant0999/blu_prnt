@@ -12,6 +12,8 @@ interface ShareRoomModalProps {
   onUpdateRole: (userId: string, newRole: CollabRole) => void;
   onRegenerateToken: () => void;
   serializedSnapshot?: string;
+  userName?: string;
+  onUpdateUserName?: (name: string) => void;
 }
 
 export const ShareRoomModal: React.FC<ShareRoomModalProps> = ({
@@ -24,8 +26,11 @@ export const ShareRoomModal: React.FC<ShareRoomModalProps> = ({
   onUpdateRole,
   onRegenerateToken,
   serializedSnapshot,
+  userName = 'Architect',
+  onUpdateUserName,
 }) => {
   const [copied, setCopied] = useState(false);
+  const [editingName, setEditingName] = useState(userName);
 
   if (!isOpen) return null;
 
@@ -82,6 +87,46 @@ export const ShareRoomModal: React.FC<ShareRoomModalProps> = ({
             </p>
           </div>
         )}
+
+        {/* User Display Name */}
+        <div className="space-y-1.5 p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80">
+          <div className="flex items-center justify-between">
+            <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+              Your Display Name
+            </label>
+            <span className="text-[10px] text-slate-400">
+              Syncs across cursors & activity in real time
+            </span>
+          </div>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={editingName}
+              onChange={(e) => setEditingName(e.target.value)}
+              onBlur={() => {
+                if (editingName.trim() && onUpdateUserName && editingName.trim() !== userName) {
+                  onUpdateUserName(editingName.trim());
+                }
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && editingName.trim() && onUpdateUserName) {
+                  onUpdateUserName(editingName.trim());
+                }
+              }}
+              placeholder="e.g. Alice, Bob, Lead Architect"
+              className="flex-1 text-xs px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 font-semibold focus:outline-none focus:border-brand-500"
+            />
+            {onUpdateUserName && editingName.trim() !== userName && (
+              <button
+                type="button"
+                onClick={() => onUpdateUserName(editingName.trim())}
+                className="px-3 py-1.5 bg-brand-600 hover:bg-brand-500 text-white rounded-xl text-xs font-bold transition shrink-0"
+              >
+                Save
+              </button>
+            )}
+          </div>
+        </div>
 
         {/* Invite Link Row */}
         <div className="space-y-2">

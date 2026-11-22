@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Users,
   Share2,
@@ -10,6 +10,7 @@ import {
   Wifi,
   WifiOff,
   Radio,
+  Edit2,
 } from 'lucide-react';
 import { PeerPresence, CollabRole } from '../../core/collab/useCollabSession';
 
@@ -19,6 +20,9 @@ interface CollabHeaderProps {
   role: CollabRole;
   peers: PeerPresence[];
   commentCount: number;
+  userName?: string;
+  userColor?: string;
+  onUpdateUserName?: (name: string) => void;
   onOpenShare: () => void;
   onToggleChat: () => void;
   onOpenHistory: () => void;
@@ -32,14 +36,65 @@ export const CollabHeader: React.FC<CollabHeaderProps> = ({
   role,
   peers,
   commentCount,
+  userName = 'Architect',
+  userColor = '#3b82f6',
+  onUpdateUserName,
   onOpenShare,
   onToggleChat,
   onOpenHistory,
   onUndo,
   onRedo,
 }) => {
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [tempName, setTempName] = useState(userName);
+
+  const handleSaveName = () => {
+    if (tempName.trim() && onUpdateUserName) {
+      onUpdateUserName(tempName.trim());
+    }
+    setIsEditingName(false);
+  };
+
   return (
     <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+      {/* Current User Badge & Name Editor */}
+      <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-slate-800/80 border border-slate-700/80 text-xs shrink-0">
+        <div
+          className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white shadow-sm shrink-0"
+          style={{ backgroundColor: userColor }}
+          title={`You: ${userName}`}
+        >
+          {userName.charAt(0).toUpperCase()}
+        </div>
+        {isEditingName ? (
+          <input
+            type="text"
+            value={tempName}
+            autoFocus
+            onChange={(e) => setTempName(e.target.value)}
+            onBlur={handleSaveName}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') handleSaveName();
+              if (e.key === 'Escape') setIsEditingName(false);
+            }}
+            className="w-20 sm:w-24 px-1 py-0.2 bg-slate-950 border border-cyan-500 rounded text-[11px] font-semibold text-white focus:outline-none"
+            placeholder="Your name"
+          />
+        ) : (
+          <button
+            onClick={() => {
+              setTempName(userName);
+              setIsEditingName(true);
+            }}
+            className="flex items-center gap-1 text-[11px] font-semibold text-slate-200 hover:text-cyan-300 transition"
+            title="Click to edit your display name"
+          >
+            <span className="max-w-[70px] sm:max-w-[90px] truncate">{userName}</span>
+            <Edit2 className="w-2.5 h-2.5 text-slate-400 hover:text-cyan-300" />
+          </button>
+        )}
+      </div>
+
       {/* Status Pill */}
       <div
         className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider border shrink-0 ${
