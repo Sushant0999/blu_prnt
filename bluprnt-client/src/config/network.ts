@@ -6,9 +6,11 @@
 export function getApiBaseUrl(): string {
   if (typeof window === 'undefined') return '';
   
-  // Explicit environment variable override
+  // Explicit environment variable override (ignore dead placeholder domains)
   const envApi = (import.meta as any).env?.VITE_API_BASE_URL;
-  if (envApi) return envApi;
+  if (envApi && !envApi.includes('bluprnt-ws.onrender.com')) {
+    return envApi;
+  }
 
   // Local development ports proxy to port 4000
   const isDevPort = window.location.port === '3000' || window.location.port === '5173' || window.location.port === '3001';
@@ -26,9 +28,11 @@ export function getApiBaseUrl(): string {
 export function getCollabWsUrl(): string {
   if (typeof window === 'undefined') return '';
 
-  // Explicit environment variable override
+  // Explicit environment variable override (ignore dead placeholder domains)
   const envWs = (import.meta as any).env?.VITE_COLLAB_WS_URL;
-  if (envWs) return envWs;
+  if (envWs && !envWs.includes('bluprnt-ws.onrender.com')) {
+    return envWs;
+  }
 
   // Local development ports connect to local backend WebSocket
   const isDevPort = window.location.port === '3000' || window.location.port === '5173' || window.location.port === '3001';
