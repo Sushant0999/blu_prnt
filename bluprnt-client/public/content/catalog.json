@@ -1,0 +1,55 @@
+{
+  "courses": [
+    {
+      "id": "distributed-foundations",
+      "title": "Distributed Foundations",
+      "subtitle": "Network boundaries, latency propagation, and fault models",
+      "icon": "Layers",
+      "description": "Master the physical and theoretical constraints of computing across unreliable networks.",
+      "topics": [
+        {
+          "id": "caching-fundamentals",
+          "title": "Distributed Caching & Invalidation",
+          "summary": "Cache topologies, read/write patterns, and combating cache stampedes.",
+          "lesson": "caching"
+        },
+        {
+          "id": "consistent-hashing-topic",
+          "title": "Consistent Hashing & Ring Distribution",
+          "summary": "Dynamic topology rebalancing with virtual nodes and minimal key displacement.",
+          "lesson": "consistent-hashing"
+        }
+      ]
+    },
+    {
+      "id": "scalable-storage",
+      "title": "Storage Engines & Partitioning",
+      "subtitle": "LSM-trees, B-trees, replication lag, and sharding strategies",
+      "icon": "Database",
+      "description": "Understand disk I/O mechanics, write amplification, and scaling data beyond single machines.",
+      "topics": [
+        {
+          "id": "lsm-trees-topic",
+          "title": "LSM-Trees & Compaction Mechanics",
+          "summary": "MemTables, SSTables, Bloom filters, and sequential append-only disk efficiency.",
+          "lesson": "lsm-trees"
+        }
+      ]
+    },
+    {
+      "id": "resilient-traffic",
+      "title": "Traffic Shaping & Resilience",
+      "subtitle": "Rate limiters, load shedding, and graceful degradation",
+      "icon": "ShieldCheck",
+      "description": "Protect downstream infrastructure from cascading collapses and sudden spiky workloads.",
+      "topics": [
+        {
+          "id": "rate-limiting-topic",
+          "title": "Traffic Shaping & Rate Limiting",
+          "summary": "Token buckets, leaky buckets, sliding windows, and distributed atomic rate counters.",
+          "lesson": "rate-limiting"
+        }
+      ]
+    }
+  ]
+}

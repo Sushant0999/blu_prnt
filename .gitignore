@@ -1,0 +1,11 @@
+node_modules
+dist
+*/dist
+*/node_modules
+data
+extracted
+*.xapk
+*.apk
+.env
+*.log
+.DS_Store

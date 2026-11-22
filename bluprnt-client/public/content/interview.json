@@ -1,0 +1,47 @@
+{
+  "prompts": [
+    {
+      "id": "p99-latency-spikes",
+      "category": "Observability & Latency",
+      "level": "warmup",
+      "question": "Your microservice has an average response latency of 15ms, but the P99 latency is spiking to 1,200ms. How would you methodically diagnose and isolate the root cause?",
+      "answer": "A healthy average latency alongside an anomalous P99 latency indicates tail-latency amplification affecting a small fraction of requests. Diagnostic steps include:\n\n1. **JVM / Runtime Garbage Collection Pauses**: Check GC metrics for Stop-The-World (STW) pauses overlapping with the spikes.\n2. **Database Connection Pool Starvation**: Verify if requests are blocking on connection checkout from HikariCP/pool.\n3. **Tail Amplification via Fan-out**: If one service fans out to 20 downstream nodes in parallel, the overall request latency is the worst-case slowest of the 20 ($1 - (1 - 0.01)^{20} \\approx 18.2\\%$ chance of hitting a P99 dependency).\n4. **Disk I/O / WAL fsync stalls**: Verify SSD I/O latency stalls during database checkpoints or synchronous logging flushes.\n5. **Noisy Neighbor contention**: Check CPU throttling (CFS quota) on Kubernetes worker nodes.",
+      "keyPoints": [
+        "Averages hide tail latency; always instrument with HDR histograms (P50, P90, P99, P99.9).",
+        "Fan-out microservice architectures exponentially compound tail latencies.",
+        "Implement hedged requests (issuing a duplicate request after a P95 timeout threshold to race the slower one)."
+      ],
+      "tradeoffs": [
+        "Hedged requests reduce P99 latency at the expense of an incremental 5% - 10% backend traffic amplification."
+      ]
+    },
+    {
+      "id": "idempotent-payment-api",
+      "category": "API Design & Transactions",
+      "level": "deepdive",
+      "question": "How do you design a payment processing endpoint (`POST /v1/charges`) so that network retries or client timeouts never result in double charging the customer?",
+      "answer": "Idempotency ensures that identical requests can be retried multiple times with the exact same outcome. The architectural solution:\n\n1. **Idempotency Key**: Client generates a unique UUID `Idempotency-Key` header and sends it with the charge payload.\n2. **Atomic Lock & Record Creation**: Upon receiving the request, the backend executes an atomic `INSERT` or conditional `SETNX` in Redis/PostgreSQL on `(client_id, idempotency_key)` with status `PROCESSING` and a lease TTL.\n3. **In-Flight Duplicate Detection**: If an identical key with status `PROCESSING` is received while the first is running, reject or pause with `HTTP 409 Conflict` or poll until finished.\n4. **Downstream Gateway Forwarding**: Pass the idempotency key directly to the underlying payment processor (e.g. Stripe).\n5. **Cached Response Storage**: Once succeeded, store the serialized response in the database. Subsequent retries with the same key immediately return the cached response with `HTTP 200 OK` without hitting payment rails.",
+      "keyPoints": [
+        "Store the hash of the request body alongside the key to detect payload tampering (mismatched payload with reused key).",
+        "Enforce a finite retention period (e.g. 24–72 hours) on idempotency keys."
+      ],
+      "tradeoffs": [
+        "Immediate response caching requires distributed database consistency for idempotency records across active regions."
+      ]
+    },
+    {
+      "id": "split-brain-recovery",
+      "category": "Consensus & Partitions",
+      "level": "deepdive",
+      "question": "What is a split-brain scenario in a distributed cluster, and what mechanisms prevent multiple nodes from simultaneously acting as cluster leader?",
+      "answer": "A split-brain scenario occurs when a network partition divides a distributed cluster into isolated sub-networks, and nodes on each side assume the other side is dead, electing separate leaders that both accept conflicting writes.\n\n### Prevention Mechanisms\n1. **Quorum-Based Consensus (Raft / Paxos)**: A leader can only be elected and commit mutations if it gathers acknowledgments from a strict majority ($Q = \\lfloor N/2 \\rfloor + 1$). In an odd-numbered cluster (e.g. 5 nodes), the minority partition (2 nodes) cannot reach quorum ($3$) and refuses writes.\n2. **Generation Clocks / Fencing Tokens**: When a new leader takes over, it receives a monotonically increasing fencing token (epoch). Any downstream storage node rejects commands carrying an obsolete epoch from a partitioned former leader.\n3. **STONITH (Shoot The Other Node In The Head)**: Automated hardware fencing (IPMI power cycling) isolating unresponsive nodes.",
+      "keyPoints": [
+        "Odd-node clustering (3, 5, 7) ensures mathematical impossibility of two concurrent quorums.",
+        "Fencing tokens protect data stores from delayed writes issued by zombie leaders."
+      ],
+      "tradeoffs": [
+        "Prioritizing consistency over availability (CP) means the minority partition must reject write requests during network severances."
+      ]
+    }
+  ]
+}

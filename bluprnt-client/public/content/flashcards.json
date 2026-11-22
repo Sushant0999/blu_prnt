@@ -1,0 +1,63 @@
+{
+  "decks": [
+    {
+      "id": "distributed-fundamentals",
+      "title": "Distributed Fundamentals",
+      "subtitle": "Theorems, clock models, and network fallacies",
+      "icon": "Layers",
+      "cards": [
+        {
+          "id": "df-1",
+          "front": "What does the CAP Theorem state?",
+          "back": "In any distributed data store experiencing a network partition (P), the system can guarantee either Consistency (C: every read receives the most recent write) or Availability (A: every non-failing node returns a response), but cannot guarantee both simultaneously."
+        },
+        {
+          "id": "df-2",
+          "front": "What is the PACELC theorem and how does it extend CAP?",
+          "back": "PACELC states that if there is a **P**artition, how does the system trade off **A**vailability vs **C**onsistency? **E**lse (when running normally without failure), how does the system trade off **L**atency vs **C**onsistency?"
+        },
+        {
+          "id": "df-3",
+          "front": "What is a Fencing Token and what bug does it solve?",
+          "back": "A fencing token is a monotonically increasing counter issued by a lock service (e.g. ZooKeeper). It solves the zombie leader problem by causing storage targets to reject writes containing an older token than the latest acknowledged one."
+        }
+      ]
+    },
+    {
+      "id": "storage-engines",
+      "title": "Storage Engines & Compaction",
+      "subtitle": "B-trees, LSM-trees, and disk mechanics",
+      "icon": "Database",
+      "cards": [
+        {
+          "id": "se-1",
+          "front": "Why are sequential disk writes orders of magnitude faster than random writes?",
+          "back": "Sequential writes minimize hard disk drive mechanical arm movement and rotational delay, and in SSDs they align with block allocation units, preventing write amplification and garbage collection overhead."
+        },
+        {
+          "id": "se-2",
+          "front": "What is Write Amplification in an LSM-tree?",
+          "back": "Write Amplification is the ratio of bytes written to persistent storage (due to WAL, MemTable flushes, and repeated background compaction merges) compared to the uncompressed bytes submitted by the client."
+        }
+      ]
+    },
+    {
+      "id": "resilience-patterns",
+      "title": "Resilience & Traffic Shaping",
+      "subtitle": "Circuit breakers, bulkheads, and load shedding",
+      "icon": "ShieldCheck",
+      "cards": [
+        {
+          "id": "rp-1",
+          "front": "What are the three states of a Circuit Breaker pattern?",
+          "back": "1. **Closed**: Normal operations; requests pass through.\n2. **Open**: Error threshold exceeded; requests fail fast immediately without hitting downstream service.\n3. **Half-Open**: Periodic canary trial requests pass through to test if downstream has recovered."
+        },
+        {
+          "id": "rp-2",
+          "front": "What is the Bulkhead pattern in distributed systems?",
+          "back": "Isolating resources (thread pools, connection pools, memory allocations) into partitioned compartments so that a total failure or slowdown in one subsystem does not consume all resources and crash the entire process."
+        }
+      ]
+    }
+  ]
+}

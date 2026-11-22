@@ -1,0 +1,48 @@
+{
+  "id": "rate-limiting",
+  "title": "Traffic Shaping & Rate Limiting",
+  "intro": "Rate limiters protect downstream services against resource exhaustion, denial of service attacks, and runaway client loops by enforcing throughput quotas.",
+  "objectives": [
+    "Compare Token Bucket, Leaky Bucket, Fixed Window, and Sliding Window algorithms.",
+    "Implement distributed atomic rate counters in Redis using Lua scripts.",
+    "Handle client backoff with standardized HTTP 429 headers (Retry-After)."
+  ],
+  "body": "Rate limiting governs the frequency with which clients invoke operations on an API. It shields internal databases and worker queues from saturation and enforces monetized subscription tiers.\n\n### Algorithms\n- **Token Bucket**: Tokens are continuously added to a bucket of capacity $B$ at rate $R$ tokens/second. Each request consumes 1 token. Allows bursts up to bucket capacity while guaranteeing average rate $R$.\n- **Leaky Bucket**: Requests queue into a bucket with fixed capacity and drain at a constant rate. Enforces completely smooth, un-bursty output traffic.\n- **Fixed Window Counter**: Divides time into fixed intervals (e.g. 1 minute). Vulnerable to edge bursts (2x quota during the window boundary).\n- **Sliding Window Log / Counter**: Smooths window boundaries by weighting request counts across previous and current time slices.",
+  "keyIdea": "Rate limiters must fail closed or open gracefully under failure; Token Bucket balances burst tolerance with strict long-term rate ceilings.",
+  "sim": "ratelimiter",
+  "diagramType": "tokenbucket",
+  "concepts": [
+    {
+      "title": "Distributed Atomic Enforcement",
+      "body": "In a multi-server setup, rate limiting state must be coordinated. Redis with atomic Lua scripts or Redis Cell (`CL.THROTTLE`) ensures race-free token acquisition without distributed locking."
+    },
+    {
+      "title": "Standard HTTP Feedback",
+      "body": "When a limit is reached, respond with `HTTP 429 Too Many Requests` along with `X-RateLimit-Limit`, `X-RateLimit-Remaining`, and `Retry-After` headers."
+    }
+  ],
+  "examples": [
+    "Stripe API rate limiting users by API key using Redis sliding window logs.",
+    "GitHub REST API returning remaining quota in response headers."
+  ],
+  "resources": [
+    {
+      "title": "Scaling Rate Limiters (Stripe Engineering Blog)",
+      "url": "https://stripe.com/blog/rate-limiters"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "rl-q1",
+      "prompt": "Which rate limiting algorithm natively permits short traffic bursts up to a fixed maximum while strictly capping long-term throughput?",
+      "options": [
+        "Leaky Bucket",
+        "Token Bucket",
+        "Strict Round Robin",
+        "Fixed Time Window"
+      ],
+      "correct": 1,
+      "explanation": "Token Bucket allows bursts when tokens have accumulated up to the bucket capacity, while the refill rate enforces the long-term throughput ceiling."
+    }
+  ]
+}

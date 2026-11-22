@@ -1,0 +1,21 @@
+{
+  "name": "system-design-prep",
+  "version": "1.0.0",
+  "private": true,
+  "description": "BluPrnt - Interactive System Design & Distributed Systems Studio (Unified Full-Stack)",
+  "workspaces": [
+    "bluprnt-client",
+    "bluprnt-server"
+  ],
+  "scripts": {
+    "dev": "node scripts/dev.js",
+    "dev:server": "npm run dev --workspace=bluprnt-server",
+    "dev:client": "npm run dev --workspace=bluprnt-client",
+    "build:client": "npm run build --workspace=bluprnt-client",
+    "build:server": "npm run build --workspace=bluprnt-server",
+    "build": "npm run build:client && npm run build:server",
+    "test": "npm test --workspace=bluprnt-client",
+    "start": "node bluprnt-server/dist/index.js",
+    "serve": "npm run build && npm run start"
+  }
+}

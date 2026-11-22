@@ -1,0 +1,72 @@
+{
+  "id": "caching",
+  "title": "Distributed Caching & Invalidation",
+  "intro": "In distributed architecture, a cache trades memory capacity and eventual consistency for sub-millisecond retrieval latencies and protection of slower backend datastores.",
+  "objectives": [
+    "Differentiate Cache-Aside, Read-Through, Write-Through, and Write-Behind architectures.",
+    "Formulate solutions for cache stampedes (dogpiling) using probabilistic early expiration or mutex locks.",
+    "Evaluate eviction policies (LRU, LFU, ARC) under skewed vs uniform key distributions."
+  ],
+  "body": "A cache is an auxiliary storage layer holding precomputed or frequently retrieved data close to compute nodes. While lookup algorithms are $O(1)$, maintaining cache correctness across a cluster introduces critical distributed concurrency challenges.\n\n### Core Write Patterns\n1. **Cache-Aside (Lazy Loading)**: The application code orchestrates both cache and database. On read miss, data is fetched from the database and written to the cache. On write, data is written to the database, and the corresponding cache entry is invalidated (evicted).\n2. **Write-Through**: The application writes solely to the cache; the cache synchronously writes to the database before acknowledging success. Guarantees consistency but adds write latency.\n3. **Write-Behind (Write-Back)**: Writes are acknowledged immediately after hitting the cache, and asynchronously flushed in batches to the database. Extremely high throughput, but risks data loss if the cache instance crashes before persistence.\n\n### The Cache Stampede Problem\nWhen an intensely requested key expires (or is invalidated), hundreds of concurrent client threads simultaneously discover a miss and barrage the database to recompute the value. Solutions include:\n- **Distributed Mutex**: Only one thread acquires a distributed lock (e.g. Redis Redlock) to query the DB; others await publication.\n- **Probabilistic Early Recomputation (XFetch algorithm)**: Recomputing the value ahead of actual TTL expiration based on access frequency.",
+  "keyIdea": "Caching makes reads blistering fast by accepting bounded staleness. The hardest problem is not fast lookup, but safe, atomic invalidation.",
+  "sim": "cache",
+  "diagramType": "cacheflow",
+  "concepts": [
+    {
+      "title": "Eviction Mechanisms",
+      "body": "When memory limits are reached, the cache must evict entries. **LRU (Least Recently Used)** tracks access recency via a doubly-linked hash list. **LFU (Least Frequently Used)** tracks access frequencies, but can retain historically hot items that are now stale unless decayed over time."
+    },
+    {
+      "title": "Cache Invalidation Trade-Offs",
+      "body": "Deleting a cached key on update is almost always safer than mutating it in place, avoiding race conditions where two concurrent writes finish in inverted order at the cache level."
+    }
+  ],
+  "examples": [
+    "Redis Cluster with read replicas offloading relational database queries.",
+    "Cloudflare Edge Workers caching regional static assets with Surrogate-Control headers."
+  ],
+  "resources": [
+    {
+      "title": "Optimal Probabilistic Cache Invalidation (Vattani et al.)",
+      "url": "https://en.wikipedia.org/wiki/Cache_stampede"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "prompt": "In a Cache-Aside pattern, what should your service do when a database row is updated?",
+      "options": [
+        "Update the cache value immediately with the new payload",
+        "Delete (invalidate) the key in the cache",
+        "Wait for the cache TTL to expire naturally without taking action",
+        "Flush the entire cache namespace"
+      ],
+      "correct": 1,
+      "explanation": "Deleting the key prevents race conditions where out-of-order write executions leave stale data in the cache."
+    },
+    {
+      "id": "q2",
+      "prompt": "What is the primary operational risk of a Write-Behind (Write-Back) caching topology?",
+      "options": [
+        "Excessive read latency due to disk polling",
+        "Potential data loss if the cache node crashes before async batch flush",
+        "Immediate cascading database connection pool exhaustion",
+        "Inability to set key-level expiration TTLs"
+      ],
+      "correct": 1,
+      "explanation": "Because writes are acknowledged while volatile in memory before disk persistence, node failure causes unrecoverable data loss."
+    },
+    {
+      "id": "q3",
+      "prompt": "What phenomenon occurs when a hot cached item expires and thousands of requests overwhelm the database simultaneously?",
+      "options": [
+        "Cache penetration",
+        "Cache stampede (dogpiling)",
+        "Write amplification",
+        "Cascading partition split"
+      ],
+      "correct": 1,
+      "explanation": "Cache stampede occurs when high-concurrency requests all experience a simultaneous miss on an expired hot key."
+    }
+  ]
+}

@@ -1,0 +1,60 @@
+{
+  "id": "consistent-hashing",
+  "title": "Consistent Hashing & Ring Distribution",
+  "intro": "Standard modulo hashing causes near-total key migration when cluster topology changes. Consistent hashing bounds redistribution to a fraction of the keyspace.",
+  "objectives": [
+    "Demonstrate why $hash(key) \\pmod N$ fails in dynamic distributed topologies.",
+    "Explain circular keyspace mapping and virtual node replication.",
+    "Calculate theoretical key rebalance fractions when adding or removing storage nodes."
+  ],
+  "body": "In a naive distributed cache with $N$ nodes, mapping a key via $hash(key) \\pmod N$ works well while $N$ is fixed. However, adding or removing a single node changes $N$, causing $(N-1)/N$ (typically $80\\% - 99\\%$) of all existing keys to hash to new nodes, triggering immediate cache flushes and backend outages.\n\n### The Consistent Hashing Ring\nConsistent Hashing treats the output of a hash function (e.g. SHA-256 or Murmur3) as a fixed circular continuum from $0$ to $2^{32}-1$.\n1. **Node Mapping**: Physical storage nodes are hashed by their identifier/IP and mapped onto points on the ring.\n2. **Key Mapping**: Keys are hashed onto the same circular ring.\n3. **Assignment Rule**: To find which node owns a key, proceed clockwise around the ring until encountering the first node.\n\n### Virtual Nodes (vnodes)\nWith few physical nodes, random hash placement creates non-uniform keyspace distribution ('hotspots'). Virtual nodes resolve this by hashing each physical node multiple times (e.g. `nodeA#1`, `nodeA#2`, ..., `nodeA#150`) across the ring. This ensures uniform keyspace allocation and proportional traffic distribution.",
+  "keyIdea": "When a node enters or leaves a ring of $N$ nodes, only $K/N$ keys need migration on average (where $K$ is total keys), isolating rebalance costs.",
+  "sim": "consistenthashing",
+  "diagramType": "ring",
+  "concepts": [
+    {
+      "title": "Clockwise Partition Ownership",
+      "body": "Every node is responsible for the continuous keyspace arc between its position and the preceding node on the ring. Node joins and leaves only affect adjacent segments."
+    },
+    {
+      "title": "Virtual Node Weighting",
+      "body": "Heterogeneous physical nodes (e.g. nodes with varying RAM or CPU specs) can be assigned proportional weights by giving more virtual nodes to larger physical servers."
+    }
+  ],
+  "examples": [
+    "Amazon DynamoDB and Apache Cassandra partition tokens across a consistent ring.",
+    "Discord's routing layer distributing voice server channels across worker gateways."
+  ],
+  "resources": [
+    {
+      "title": "Consistent Hashing and Random Trees (Karger et al. MIT)",
+      "url": "https://www.cs.princeton.edu/courses/archive/fall09/cos518/papers/chash.pdf"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "ch-q1",
+      "prompt": "If you scale a consistent hashing cluster from 9 nodes to 10 nodes, what fraction of keys migrate on average?",
+      "options": [
+        "100% of keys",
+        "Approximately 1/10 (10%) of keys",
+        "Approximately 9/10 (90%) of keys",
+        "50% of keys"
+      ],
+      "correct": 1,
+      "explanation": "Consistent hashing ensures that only keys belonging to the segments claimed by the new node are reassigned, which is $1/(N+1) = 1/10$ on average."
+    },
+    {
+      "id": "ch-q2",
+      "prompt": "What is the primary function of Virtual Nodes (vnodes) in a consistent hashing implementation?",
+      "options": [
+        "Encrypting keys stored on remote disks",
+        "Preventing hotspotting by distributing each physical node across hundreds of ring locations",
+        "Performing zero-copy network serialization",
+        "Eliminating the need for a cryptographic hash function"
+      ],
+      "correct": 1,
+      "explanation": "Virtual nodes prevent non-uniform distribution (hotspots) by scattering each physical machine across multiple points along the ring."
+    }
+  ]
+}

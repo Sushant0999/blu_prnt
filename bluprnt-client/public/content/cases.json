@@ -1,0 +1,96 @@
+{
+  "cases": [
+    {
+      "id": "distributed-id-generator",
+      "title": "Design a Distributed Unique ID Generator",
+      "subtitle": "Generate 64-bit strictly monotonic, roughly time-ordered IDs at 100,000+ QPS without central coordination bottlenecks.",
+      "level": "intermediate",
+      "tags": ["Distributed Systems", "Clocks", "High Concurrency"],
+      "readMinutes": 12,
+      "icon": "Key",
+      "functional": [
+        "IDs must be globally unique 64-bit integers fitting standard database primary keys.",
+        "IDs must be roughly sortable by generation time (enabling index locality).",
+        "System must generate over 100,000 unique IDs per second with < 2ms latency."
+      ],
+      "nonFunctional": [
+        "High availability (99.999% uptime) with zero single point of failure (SPOF).",
+        "Clock drift resilience (safe handling of NTP backward time jumps)."
+      ],
+      "targets": [
+        { "label": "Peak Write Throughput", "value": "150,000 IDs/sec" },
+        { "label": "Max ID Bit Size", "value": "64-bit Long" },
+        { "label": "Clock Epoch Lifespan", "value": "69 years" }
+      ],
+      "deepDives": [
+        "Twitter Snowflake bit allocation: 1 sign bit + 41-bit millisecond timestamp + 10-bit machine/datacenter ID + 12-bit per-millisecond sequence counter (4,096 IDs/ms per node).",
+        "Addressing NTP backward clock drift: If `current_timestamp < last_timestamp`, pause thread until clock catches up or fail over to backup logical sequences."
+      ],
+      "commonMistakes": [
+        "Using UUIDv4 (128-bit, non-sequential, severely degrades B-tree index insertion performance).",
+        "Using auto-incrementing SQL ID with step offsets (creates tight database coupling and cross-datacenter sync delays)."
+      ],
+      "seniorNotes": "At senior staff level, discuss how Snowflake IDs encode the node ID, which could leak datacenter topology or generate rate patterns if exposed raw in client-facing URLs. Mask with Feistel cipher or format-preserving encryption if exposed."
+    },
+    {
+      "id": "collaborative-document-editor",
+      "title": "Design a Real-Time Collaborative Document Editor",
+      "subtitle": "Enable multi-user simultaneous document editing with sub-100ms sync and conflict-free convergence.",
+      "level": "advanced",
+      "tags": ["CRDT", "WebSockets", "Event Driven", "Consistency"],
+      "readMinutes": 18,
+      "icon": "FileText",
+      "functional": [
+        "Multiple authors can edit the same document concurrently in real-time.",
+        "Offline editing mode with automatic reconciliation upon network reconnection.",
+        "Cursor position and selection presence broadcast to all active collaborators."
+      ],
+      "nonFunctional": [
+        "Strong Eventual Consistency (SEC): All connected peers converge to the exact same text without central locking.",
+        "Local keystroke latency < 16ms (instant 60fps typing feedback)."
+      ],
+      "targets": [
+        { "label": "Active Collaborators / Doc", "value": "100 concurrent users" },
+        { "label": "Peer-to-Peer Sync Latency", "value": "< 100ms P95" }
+      ],
+      "deepDives": [
+        "Operational Transformation (OT) vs Conflict-free Replicated Data Types (CRDT): OT requires a central transformation server (e.g. Google Docs). State-based and operation-based CRDTs (e.g. Yjs, Automerge using RGA trees) allow decentralized peer convergence without central mediation.",
+        "Websocket gateway connection tier with Redis Pub/Sub room clustering for broadcast."
+      ],
+      "commonMistakes": [
+        "Relying on last-write-wins (LWW) timestamp registers for character streams, which leads to character clipping and lost edits."
+      ],
+      "seniorNotes": "Emphasize garbage collection of deleted character tombstones in CRDT data structures to prevent unbounded memory growth over prolonged collaborative sessions."
+    },
+    {
+      "id": "distributed-rate-limiter-service",
+      "title": "Design a Global Distributed Rate Limiting Service",
+      "subtitle": "Enforce per-tenant throughput budgets across distributed API gateways with minimal latency overhead.",
+      "level": "intermediate",
+      "tags": ["Rate Limiting", "Redis", "Resilience", "API Gateway"],
+      "readMinutes": 14,
+      "icon": "ShieldCheck",
+      "functional": [
+        "Enforce rate limits based on client IP, authenticated User ID, or API Key.",
+        "Support multi-tier limits (e.g. 100 req/sec and 50,000 req/day).",
+        "Return remaining quota and retry-after headers on HTTP 429."
+      ],
+      "nonFunctional": [
+        "Evaluation overhead < 2ms at P99 so upstream API latency is unaffected.",
+        "Soft-fail behavior: If rate limiting cluster becomes unreachable, fail open to avoid blackholing traffic."
+      ],
+      "targets": [
+        { "label": "Inspection QPS", "value": "1,000,000 req/sec" },
+        { "label": "Max Evaluation Latency", "value": "1.5ms P99" }
+      ],
+      "deepDives": [
+        "Local gateway token caching with batch synchronization to central Redis cluster to reduce remote round trips.",
+        "Sliding window counter algorithm using Redis sorted sets (ZSET) vs Lua script atomic hash maps."
+      ],
+      "commonMistakes": [
+        "Executing naive `GET` then `SET` in Redis, causing critical race conditions under concurrent client bursts."
+      ],
+      "seniorNotes": "Address cross-region rate synchronization latency: rather than synchronizing every single token across oceanic links, partition the global quota across regions proportionally to historical regional traffic."
+    }
+  ]
+}

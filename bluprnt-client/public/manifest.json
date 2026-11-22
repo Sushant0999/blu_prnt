@@ -1,0 +1,18 @@
+{
+  "name": "BluPrnt — Interactive System Design Hub",
+  "short_name": "BluPrnt",
+  "description": "Offline-first, interactive learning platform for System Design and Distributed Systems",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#020617",
+  "theme_color": "#0284c7",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/vite.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

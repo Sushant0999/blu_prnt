@@ -1,0 +1,48 @@
+{
+  "id": "lsm-trees",
+  "title": "LSM-Trees & Compaction Mechanics",
+  "intro": "Log-Structured Merge-trees (LSM-trees) trade sequential disk writes and read amplification for exceptional write throughput in modern databases.",
+  "objectives": [
+    "Analyze why sequential I/O outperforms random disk writes by orders of magnitude.",
+    "Trace the write lifecycle from Write-Ahead Log (WAL) to MemTable to immutable SSTables.",
+    "Explain Size-Tiered vs Leveled Compaction strategies and write amplification trade-offs."
+  ],
+  "body": "Traditional relational databases store indexes as B-Trees, requiring random disk page writes that incur heavy I/O head movement or SSD block updates. LSM-Trees replace random writes with sequential append-only disk operations.\n\n### The LSM-Tree Write Path\n1. **Write-Ahead Log (WAL)**: The incoming mutation is appended to an on-disk sequential log for crash durability.\n2. **MemTable**: The key-value pair is inserted into an in-memory sorted structure (typically a Red-Black Tree or SkipList).\n3. **Flush**: Once the MemTable reaches its memory limit (e.g. 64 MB), it becomes immutable and is flushed to disk as a sorted string table (**SSTable**).\n\n### Compaction\nBecause data is never mutated in place, disk space accumulates stale versions and tombstone deletions. Compaction background threads periodically merge sorted SSTables, discarding deleted keys and sorting entries across progressive storage levels.",
+  "keyIdea": "LSM-Trees maximize write throughput by transforming all writes into sequential memory appends, delegating sorting and deduplication to background compaction.",
+  "sim": "lsmtree",
+  "diagramType": "compaction",
+  "concepts": [
+    {
+      "title": "Bloom Filters on SSTables",
+      "body": "Because a key could reside in any SSTable, reads would require inspecting multiple disk files. A Bloom filter in memory for each SSTable allows skipping files that definitely do not contain the requested key."
+    },
+    {
+      "title": "Write Amplification",
+      "body": "Write amplification is the ratio of bytes written to underlying storage versus bytes submitted by the client application. Leveled compaction maintains low read amplification at the cost of higher write amplification."
+    }
+  ],
+  "examples": [
+    "Apache Cassandra using LSM-tree storage engines for petabyte-scale write workloads.",
+    "RocksDB powering high-performance key-value storage at Meta and CockroachDB."
+  ],
+  "resources": [
+    {
+      "title": "The Log-Structured Merge-Tree (O'Neil et al.)",
+      "url": "https://www.cs.umb.edu/~poneil/lsmtree.pdf"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "lsm-q1",
+      "prompt": "How does an LSM-tree database optimize read latency across dozens of disk SSTables without opening each one?",
+      "options": [
+        "By doing an all-to-all broadcast RPC",
+        "By querying an in-memory Bloom filter for each SSTable before issuing disk reads",
+        "By running continuous distributed two-phase commits",
+        "By converting SSTables into in-memory hash maps"
+      ],
+      "correct": 1,
+      "explanation": "In-memory Bloom filters immediately indicate if a key is absent from an SSTable with zero disk I/O, only reading files that might contain the key."
+    }
+  ]
+}
