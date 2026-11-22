@@ -384,4 +384,3 @@ blu_prnt/
 ## 📄 License
 
 This project is licensed under the [MIT License](LICENSE).
-Built with ❤️ for distributed systems engineers and system design interview candidates worldwide.
