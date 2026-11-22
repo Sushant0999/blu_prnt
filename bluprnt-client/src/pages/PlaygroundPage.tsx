@@ -238,9 +238,12 @@ export const PlaygroundPage: React.FC = () => {
     settingsMap.observe(syncFromYjs);
 
     if (nodesMap.size === 0) {
+      // Seed the shared room with the creator's active canvas topology
+      const seedNodes = localNodes.length > 0 ? localNodes : PLAYGROUND_TEMPLATES['url-shortener'].nodes;
+      const seedEdges = localNodes.length > 0 ? localEdges : PLAYGROUND_TEMPLATES['url-shortener'].edges;
+
       transact(() => {
-        const initTpl = PLAYGROUND_TEMPLATES['url-shortener'];
-        initTpl.nodes.forEach((n) => {
+        seedNodes.forEach((n) => {
           nodesMap.set(n.id, {
             id: n.id,
             label: n.data.label,
@@ -253,10 +256,10 @@ export const PlaygroundPage: React.FC = () => {
             y: n.position.y,
           });
         });
-        initTpl.edges.forEach((e) => {
+        seedEdges.forEach((e) => {
           edgesMap.set(e.id, { id: e.id, source: e.source, target: e.target });
         });
-        settingsMap.set('targetRps', 30000);
+        settingsMap.set('targetRps', targetRps || 30000);
       });
     } else {
       syncFromYjs();

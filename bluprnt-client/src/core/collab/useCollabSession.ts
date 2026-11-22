@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import * as Y from 'yjs';
 import { WebsocketProvider } from 'y-websocket';
+import { WebrtcProvider } from 'y-webrtc';
 import { IndexeddbPersistence } from 'y-indexeddb';
 import { Node, Edge } from 'reactflow';
 import { SystemNodeData } from '../../components/playground/SystemCustomNode';
@@ -97,32 +98,33 @@ export function useCollabSession(roomId: string | null, userEmail: string, initi
     const indexeddbProvider = new IndexeddbPersistence(`bluprnt-room-${roomId}`, doc);
     persistenceRef.current = indexeddbProvider;
 
-    // Check if room is offline-local or if a valid WebSocket URL is available
-    const isLocalRoom = roomId.endsWith('-local') || roomId.endsWith('-studio') || roomId.startsWith('local-');
+    // Check if room has a dedicated WebSocket server or should use P2P WebRTC
+    const isLocalOnly = roomId.endsWith('-local') || roomId.startsWith('local-');
     const wsUrl = getCollabWsUrl();
-    const shouldConnectWs = !isLocalRoom && Boolean(wsUrl);
+    const shouldConnectWs = !isLocalOnly && Boolean(wsUrl);
 
-    let provider: WebsocketProvider | null = null;
+    let wsProvider: WebsocketProvider | null = null;
+    let webrtcProvider: WebrtcProvider | null = null;
 
     if (shouldConnectWs) {
       try {
-        provider = new WebsocketProvider(wsUrl, roomId, doc, {
+        wsProvider = new WebsocketProvider(wsUrl, roomId, doc, {
           params: {
             userId: userEmail || 'anonymous',
             name: localUser.current.name,
             role: initialRole,
           },
         });
-        providerRef.current = provider;
+        providerRef.current = wsProvider;
 
-        provider.on('status', (event: { status: 'connected' | 'connecting' | 'disconnected' }) => {
+        wsProvider.on('status', (event: { status: 'connected' | 'connecting' | 'disconnected' }) => {
           if (event.status === 'connected') setStatus('connected');
           else if (event.status === 'connecting') setStatus('connecting');
           else setStatus('offline');
         });
 
-        // 3. Setup Awareness & Presence
-        const awareness = provider.awareness;
+        // Setup Awareness & Presence
+        const awareness = wsProvider.awareness;
         awareness.setLocalStateField('user', localUser.current);
 
         const updatePresence = () => {
@@ -148,7 +150,57 @@ export function useCollabSession(roomId: string | null, userEmail: string, initi
 
         awareness.on('change', updatePresence);
       } catch (err) {
-        console.warn('[BluPrnt] WebSocket connection skipped or unavailable:', err);
+        console.warn('[BluPrnt] WebSocket connection error:', err);
+        setStatus('offline');
+      }
+    } else if (!isLocalOnly) {
+      // Automatic P2P WebRTC Multi-User Sharing (100% works on Vercel without a backend!)
+      try {
+        webrtcProvider = new WebrtcProvider(`bluprnt-studio-${roomId}`, doc, {
+          signaling: [
+            'wss://signaling.yjs.dev',
+            'wss://y-webrtc-signaling-eu.herokuapp.com',
+            'wss://y-webrtc-signaling-us.herokuapp.com',
+          ],
+        });
+        providerRef.current = webrtcProvider as any;
+
+        webrtcProvider.on('status', (event: { connected: boolean }) => {
+          setStatus(event.connected ? 'connected' : 'connecting');
+        });
+
+        webrtcProvider.on('synced', (event: { synced: boolean }) => {
+          if (event.synced) setStatus('connected');
+        });
+
+        // Setup Awareness & Presence over WebRTC DataChannel
+        const awareness = webrtcProvider.awareness;
+        awareness.setLocalStateField('user', localUser.current);
+
+        const updatePresence = () => {
+          const states = awareness.getStates();
+          const peerList: PeerPresence[] = [];
+          const selections: Record<string, { name: string; color: string }> = {};
+
+          states.forEach((state: any, clientId: number) => {
+            if (state.user && clientId !== awareness.clientID) {
+              peerList.push({ clientId, user: state.user });
+              if (state.user.selectedNodeId) {
+                selections[state.user.selectedNodeId] = {
+                  name: state.user.name,
+                  color: state.user.color,
+                };
+              }
+            }
+          });
+
+          setPeers(peerList);
+          setRemoteSelections(selections);
+        };
+
+        awareness.on('change', updatePresence);
+      } catch (err) {
+        console.warn('[BluPrnt] WebRTC peer setup error:', err);
         setStatus('offline');
       }
     } else {
@@ -212,7 +264,8 @@ export function useCollabSession(roomId: string | null, userEmail: string, initi
     settingsMap.observe(handleSettingsChange);
 
     return () => {
-      provider?.destroy();
+      wsProvider?.destroy();
+      webrtcProvider?.destroy();
       indexeddbProvider.destroy();
       doc.destroy();
     };
