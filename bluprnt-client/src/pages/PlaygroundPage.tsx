@@ -67,6 +67,8 @@ import { MACHINE_TIERS, MachineTierId } from '../core/types/machineTiers';
 import { db } from '../db/database';
 import { SavedTopologyDesign } from '../types/storage';
 
+import { getApiBaseUrl } from '../config/network';
+
 const nodeTypes = {
   systemNode: SystemCustomNode,
 };
@@ -76,8 +78,7 @@ const edgeTypes = {
   default: AnimatedEdge,
 };
 
-const isDevPort = typeof window !== 'undefined' && (window.location.port === '3000' || window.location.port === '5173' || window.location.port === '3001');
-const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL || (isDevPort ? 'http://localhost:4000' : '');
+const API_BASE = getApiBaseUrl();
 
 export const PlaygroundPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();

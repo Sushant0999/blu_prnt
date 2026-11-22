@@ -3,8 +3,9 @@ import { CreditCard, Check, Zap, ShieldCheck, KeyRound, Sparkles, Clock } from '
 import { db } from '../db/database';
 import { ProStatusRecord } from '../types/storage';
 
-const isDevPort = typeof window !== 'undefined' && (window.location.port === '3000' || window.location.port === '5173' || window.location.port === '3001');
-const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL || (isDevPort ? 'http://localhost:4000' : '');
+import { getApiBaseUrl } from '../config/network';
+
+const API_BASE = getApiBaseUrl();
 
 export const ProPage: React.FC = () => {
   const [email, setEmail] = useState<string>(localStorage.getItem('bluprnt_user_email') || 'engineer@example.com');

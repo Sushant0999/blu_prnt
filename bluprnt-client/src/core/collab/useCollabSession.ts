@@ -6,6 +6,7 @@ import { Node, Edge } from 'reactflow';
 import { SystemNodeData } from '../../components/playground/SystemCustomNode';
 import { evaluateBottlenecks, TopologySimulationResult } from '../algorithms/bottleneck';
 import { computeCriticalPathLatency, DagLatencyResult } from '../algorithms/dagLatency';
+import { getCollabWsUrl } from '../../config/network';
 
 export type CollabRole = 'owner' | 'editor' | 'viewer';
 
@@ -96,21 +97,14 @@ export function useCollabSession(roomId: string | null, userEmail: string, initi
     const indexeddbProvider = new IndexeddbPersistence(`bluprnt-room-${roomId}`, doc);
     persistenceRef.current = indexeddbProvider;
 
-    // Check if room is offline-local or if running on Vercel without an external WebSocket server
+    // Check if room is offline-local or if a valid WebSocket URL is available
     const isLocalRoom = roomId.endsWith('-local') || roomId.startsWith('local-');
-    const isVercel = typeof window !== 'undefined' && window.location.hostname.endsWith('vercel.app');
-    const envWsUrl = (import.meta as any).env?.VITE_COLLAB_WS_URL;
-    const shouldConnectWs = !isLocalRoom && (!isVercel || !!envWsUrl);
+    const wsUrl = getCollabWsUrl();
+    const shouldConnectWs = !isLocalRoom && Boolean(wsUrl);
 
     let provider: WebsocketProvider | null = null;
 
     if (shouldConnectWs) {
-      // 2. WebSocket Connection to BluPrnt Collab Gateway (dynamic host detection or env override)
-      const isDevPort = window.location.port === '3000' || window.location.port === '5173' || window.location.port === '3001';
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const wsHost = isDevPort ? 'localhost:4000' : window.location.host;
-      const wsUrl = envWsUrl || `${protocol}//${wsHost}/collab`;
-
       try {
         provider = new WebsocketProvider(wsUrl, roomId, doc, {
           params: {
@@ -159,11 +153,6 @@ export function useCollabSession(roomId: string | null, userEmail: string, initi
       }
     } else {
       setStatus('offline');
-      if (isVercel && !envWsUrl) {
-        console.info(
-          '[BluPrnt] Running in standalone local mode. To enable real-time WebSockets on Vercel, set VITE_COLLAB_WS_URL in Vercel environment variables, or host on Render/Railway.'
-        );
-      }
     }
 
     // 4. Scoped UndoManager (Only tracks my changes via localOriginRef)
