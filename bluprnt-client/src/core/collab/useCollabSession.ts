@@ -56,6 +56,7 @@ const PEER_COLORS = [
 export function useCollabSession(roomId: string | null, userEmail: string, initialRole: CollabRole = 'editor') {
   const [doc] = useState<Y.Doc>(() => new Y.Doc());
   const [status, setStatus] = useState<'connected' | 'connecting' | 'offline'>('offline');
+  const [synced, setSynced] = useState<boolean>(false);
   const [role, setRole] = useState<CollabRole>(initialRole);
   const [peers, setPeers] = useState<PeerPresence[]>([]);
   const [comments, setComments] = useState<NodeComment[]>([]);
@@ -67,7 +68,8 @@ export function useCollabSession(roomId: string | null, userEmail: string, initi
     runInfo: SharedSimulationRun;
   } | null>(null);
 
-  const providerRef = useRef<WebsocketProvider | null>(null);
+  const wsProviderRef = useRef<WebsocketProvider | null>(null);
+  const webrtcProviderRef = useRef<WebrtcProvider | null>(null);
   const persistenceRef = useRef<IndexeddbPersistence | null>(null);
   const undoManagerRef = useRef<Y.UndoManager | null>(null);
   const localOriginRef = useRef<symbol>(Symbol('local-collab-origin'));
@@ -85,14 +87,16 @@ export function useCollabSession(roomId: string | null, userEmail: string, initi
     localUser.current.role = role;
   }, [role]);
 
-  // Connect to Y.Doc, IndexedDB and WebSocket Server
+  // Connect to Y.Doc, IndexedDB and WebSocket / WebRTC Server
   useEffect(() => {
     if (!roomId) {
       setStatus('offline');
+      setSynced(false);
       return;
     }
 
     setStatus('connecting');
+    setSynced(false);
 
     // 1. Local Offline Persistence via IndexedDB
     const indexeddbProvider = new IndexeddbPersistence(`bluprnt-room-${roomId}`, doc);
@@ -103,64 +107,84 @@ export function useCollabSession(roomId: string | null, userEmail: string, initi
     const wsUrl = getCollabWsUrl();
     const shouldConnectWs = !isLocalOnly && Boolean(wsUrl);
 
+    // Ensure room name is properly scoped for shared relays
+    const channelName = roomId.startsWith('bluprnt-') ? roomId : `bluprnt-${roomId}`;
+
     let wsProvider: WebsocketProvider | null = null;
     let webrtcProvider: WebrtcProvider | null = null;
 
+    const updateCombinedPresence = () => {
+      const peerMap = new Map<number, CollabUser>();
+      const selections: Record<string, { name: string; color: string }> = {};
+
+      const ingestStates = (states: Map<number, any>, selfId?: number) => {
+        states.forEach((state: any, clientId: number) => {
+          if (state.user && clientId !== selfId) {
+            peerMap.set(clientId, state.user);
+            if (state.user.selectedNodeId) {
+              selections[state.user.selectedNodeId] = {
+                name: state.user.name,
+                color: state.user.color,
+              };
+            }
+          }
+        });
+      };
+
+      if (wsProvider) {
+        ingestStates(wsProvider.awareness.getStates(), wsProvider.awareness.clientID);
+      }
+      if (webrtcProvider) {
+        ingestStates(webrtcProvider.awareness.getStates(), webrtcProvider.awareness.clientID);
+      }
+
+      setPeers(Array.from(peerMap.entries()).map(([clientId, user]) => ({ clientId, user })));
+      setRemoteSelections(selections);
+    };
+
     if (shouldConnectWs) {
       try {
-        wsProvider = new WebsocketProvider(wsUrl, roomId, doc, {
+        wsProvider = new WebsocketProvider(wsUrl, channelName, doc, {
           params: {
             userId: userEmail || 'anonymous',
             name: localUser.current.name,
             role: initialRole,
           },
         });
-        providerRef.current = wsProvider;
+        wsProviderRef.current = wsProvider;
 
         wsProvider.on('status', (event: { status: 'connected' | 'connecting' | 'disconnected' }) => {
-          if (event.status === 'connected') setStatus('connected');
-          else if (event.status === 'connecting') setStatus('connecting');
-          else setStatus('offline');
+          if (event.status === 'connected') {
+            setStatus('connected');
+          } else if (event.status === 'connecting') {
+            setStatus('connecting');
+          } else if (!webrtcProviderRef.current || !webrtcProviderRef.current.connected) {
+            setStatus('offline');
+          }
+        });
+
+        wsProvider.on('sync', (isSynced: boolean) => {
+          if (isSynced) {
+            setSynced(true);
+            setStatus('connected');
+          }
         });
 
         // Setup Awareness & Presence
-        const awareness = wsProvider.awareness;
-        awareness.setLocalStateField('user', localUser.current);
-
-        const updatePresence = () => {
-          const states = awareness.getStates();
-          const peerList: PeerPresence[] = [];
-          const selections: Record<string, { name: string; color: string }> = {};
-
-          states.forEach((state: any, clientId: number) => {
-            if (state.user && clientId !== awareness.clientID) {
-              peerList.push({ clientId, user: state.user });
-              if (state.user.selectedNodeId) {
-                selections[state.user.selectedNodeId] = {
-                  name: state.user.name,
-                  color: state.user.color,
-                };
-              }
-            }
-          });
-
-          setPeers(peerList);
-          setRemoteSelections(selections);
-        };
-
-        awareness.on('change', updatePresence);
+        wsProvider.awareness.setLocalStateField('user', localUser.current);
+        wsProvider.awareness.on('change', updateCombinedPresence);
       } catch (err) {
         console.warn('[BluPrnt] WebSocket connection error:', err);
-        setStatus('offline');
       }
-    } else if (!isLocalOnly) {
-      // Automatic P2P WebRTC Multi-User Sharing (100% works on Vercel without a backend!)
+    }
+
+    if (!isLocalOnly) {
+      // Mesh P2P WebRTC Multi-User Sharing with live signaling servers
       try {
-        webrtcProvider = new WebrtcProvider(`bluprnt-room-${roomId}`, doc, {
+        webrtcProvider = new WebrtcProvider(channelName, doc, {
           signaling: [
-            'wss://signaling.yjs.dev',
-            'wss://y-webrtc-signaling-eu.herokuapp.com',
-            'wss://y-webrtc-signaling-us.herokuapp.com',
+            'wss://y-webrtc.fly.dev',
+            'wss://signaling.fly.dev',
           ],
           peerOpts: {
             config: {
@@ -172,48 +196,30 @@ export function useCollabSession(roomId: string | null, userEmail: string, initi
             },
           },
         });
-        providerRef.current = webrtcProvider as any;
+        webrtcProviderRef.current = webrtcProvider;
 
         webrtcProvider.on('status', (event: { connected: boolean }) => {
-          setStatus(event.connected ? 'connected' : 'connecting');
+          if (event.connected) setStatus('connected');
         });
 
         webrtcProvider.on('synced', (event: { synced: boolean }) => {
-          if (event.synced) setStatus('connected');
+          if (event.synced) {
+            setSynced(true);
+            setStatus('connected');
+          }
         });
 
         // Setup Awareness & Presence over WebRTC DataChannel
-        const awareness = webrtcProvider.awareness;
-        awareness.setLocalStateField('user', localUser.current);
-
-        const updatePresence = () => {
-          const states = awareness.getStates();
-          const peerList: PeerPresence[] = [];
-          const selections: Record<string, { name: string; color: string }> = {};
-
-          states.forEach((state: any, clientId: number) => {
-            if (state.user && clientId !== awareness.clientID) {
-              peerList.push({ clientId, user: state.user });
-              if (state.user.selectedNodeId) {
-                selections[state.user.selectedNodeId] = {
-                  name: state.user.name,
-                  color: state.user.color,
-                };
-              }
-            }
-          });
-
-          setPeers(peerList);
-          setRemoteSelections(selections);
-        };
-
-        awareness.on('change', updatePresence);
+        webrtcProvider.awareness.setLocalStateField('user', localUser.current);
+        webrtcProvider.awareness.on('change', updateCombinedPresence);
       } catch (err) {
         console.warn('[BluPrnt] WebRTC peer setup error:', err);
-        setStatus('offline');
       }
-    } else {
+    }
+
+    if (isLocalOnly) {
       setStatus('offline');
+      setSynced(true);
     }
 
     // 4. Scoped UndoManager (Only tracks my changes via localOriginRef)
@@ -273,6 +279,8 @@ export function useCollabSession(roomId: string | null, userEmail: string, initi
     settingsMap.observe(handleSettingsChange);
 
     return () => {
+      wsProviderRef.current = null;
+      webrtcProviderRef.current = null;
       wsProvider?.destroy();
       webrtcProvider?.destroy();
       indexeddbProvider.destroy();
@@ -284,23 +292,33 @@ export function useCollabSession(roomId: string | null, userEmail: string, initi
   const lastCursorEmit = useRef<number>(0);
   const emitCursor = useCallback((x: number, y: number) => {
     const now = Date.now();
-    if (now - lastCursorEmit.current > 30 && providerRef.current) {
+    if (now - lastCursorEmit.current > 30) {
       lastCursorEmit.current = now;
       localUser.current.cursor = { x, y };
-      providerRef.current.awareness.setLocalStateField('user', {
+      const userPayload = {
         ...localUser.current,
         cursor: { x, y },
-      });
+      };
+      if (wsProviderRef.current) {
+        wsProviderRef.current.awareness.setLocalStateField('user', userPayload);
+      }
+      if (webrtcProviderRef.current) {
+        webrtcProviderRef.current.awareness.setLocalStateField('user', userPayload);
+      }
     }
   }, []);
 
   const emitSelectedNode = useCallback((nodeId: string | null) => {
-    if (providerRef.current) {
-      localUser.current.selectedNodeId = nodeId;
-      providerRef.current.awareness.setLocalStateField('user', {
-        ...localUser.current,
-        selectedNodeId: nodeId,
-      });
+    localUser.current.selectedNodeId = nodeId;
+    const userPayload = {
+      ...localUser.current,
+      selectedNodeId: nodeId,
+    };
+    if (wsProviderRef.current) {
+      wsProviderRef.current.awareness.setLocalStateField('user', userPayload);
+    }
+    if (webrtcProviderRef.current) {
+      webrtcProviderRef.current.awareness.setLocalStateField('user', userPayload);
     }
   }, []);
 
@@ -385,6 +403,7 @@ export function useCollabSession(roomId: string | null, userEmail: string, initi
   return {
     doc,
     status,
+    synced,
     role,
     setRole,
     peers,

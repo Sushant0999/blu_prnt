@@ -39,9 +39,7 @@ export const ShareRoomModal: React.FC<ShareRoomModalProps> = ({
   };
 
   const isOwner = userRole === 'owner';
-  const isVercel = typeof window !== 'undefined' && window.location.hostname.endsWith('vercel.app');
-  const hasExternalWs = !!(import.meta as any).env?.VITE_COLLAB_WS_URL;
-  const isOfflineMode = roomId.endsWith('-local') || roomId.endsWith('-studio') || (isVercel && !hasExternalWs);
+  const isOfflineMode = roomId.endsWith('-local');
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
@@ -52,7 +50,7 @@ export const ShareRoomModal: React.FC<ShareRoomModalProps> = ({
               Share System Architecture
             </h3>
             <p className="text-xs text-slate-500">
-              Share and export your system design topology.
+              Invite teammates for real-time collaborative system design.
             </p>
           </div>
           <button
@@ -63,14 +61,24 @@ export const ShareRoomModal: React.FC<ShareRoomModalProps> = ({
           </button>
         </div>
 
-        {/* Studio Room Advisory */}
-        {isOfflineMode && (
-          <div className="p-3 bg-cyan-500/10 border border-cyan-500/30 rounded-2xl text-[11px] text-cyan-800 dark:text-cyan-300 space-y-1">
+        {/* Live Collaboration Status Pill */}
+        {!isOfflineMode ? (
+          <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl text-[11px] text-emerald-800 dark:text-emerald-300 space-y-1">
             <span className="font-bold flex items-center gap-1.5">
-              <span>💡</span> Studio Room
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span>Real-Time Collaboration Active</span>
             </span>
             <p className="opacity-90 leading-relaxed">
-              Your canvas and designs are auto-saved in your browser's IndexedDB. To share complete architectures across devices, you can also use the <strong>Download (Export JSON)</strong> and <strong>Upload (Import JSON)</strong> tools on the top navigation bar.
+              Anyone with this link can join this live whiteboard. Node updates, drag movements, simulations, and cursors sync instantly in real time.
+            </p>
+          </div>
+        ) : (
+          <div className="p-3 bg-cyan-500/10 border border-cyan-500/30 rounded-2xl text-[11px] text-cyan-800 dark:text-cyan-300 space-y-1">
+            <span className="font-bold flex items-center gap-1.5">
+              <span>💡</span> Offline Local Room
+            </span>
+            <p className="opacity-90 leading-relaxed">
+              This canvas is saved locally in your browser IndexedDB.
             </p>
           </div>
         )}

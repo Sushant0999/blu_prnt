@@ -111,6 +111,8 @@ export const PlaygroundPage: React.FC = () => {
   const [activeRoomId, setActiveRoomId] = useState<string | null>(roomIdFromUrl);
   const [inviteToken, setInviteToken] = useState<string>(inviteTokenFromUrl);
   const [userEmail] = useState<string>(() => localStorage.getItem('bluprnt_user_email') || 'engineer@example.com');
+  const isRoomCreatorRef = useRef<boolean>(false);
+  const seededRoomRef = useRef<string | null>(null);
 
   // Sidebars and Modals state
   const [isLeftPaletteOpen, setIsLeftPaletteOpen] = useState(true);
@@ -199,6 +201,7 @@ export const PlaygroundPage: React.FC = () => {
   const {
     doc,
     status: collabStatus,
+    synced: collabSynced,
     role: userRole,
     setRole,
     peers,
@@ -243,6 +246,8 @@ export const PlaygroundPage: React.FC = () => {
             replicas: val.replicas,
             capacityQps: val.capacityQps,
             latencyMs: val.latencyMs,
+            machineTier: val.machineTier,
+            isDead: val.isDead,
           },
         });
       });
@@ -269,40 +274,61 @@ export const PlaygroundPage: React.FC = () => {
     edgesMap.observe(syncFromYjs);
     settingsMap.observe(syncFromYjs);
 
-    if (nodesMap.size === 0) {
-      // Seed the shared room with the creator's active canvas topology (or shared snapshot)
-      let seedNodes = localNodes;
-      let seedEdges = localEdges;
-      let seedRps = targetRps || 30000;
+    // Initial sync / seeding check
+    const performSeedIfNeeded = () => {
+      if (seededRoomRef.current === activeRoomId) return;
 
-      if (sharedSnapshot && sharedSnapshot.nodes.length > 0) {
-        seedNodes = sharedSnapshot.nodes;
-        seedEdges = sharedSnapshot.edges;
-        seedRps = sharedSnapshot.targetRps || seedRps;
-      } else if (seedNodes.length === 0) {
-        seedNodes = PLAYGROUND_TEMPLATES['url-shortener'].nodes;
-        seedEdges = PLAYGROUND_TEMPLATES['url-shortener'].edges;
-      }
+      if (nodesMap.size === 0) {
+        // Seed the shared room with the creator's active canvas topology (or shared snapshot)
+        let seedNodes = localNodes;
+        let seedEdges = localEdges;
+        let seedRps = targetRps || 30000;
 
-      transact(() => {
-        seedNodes.forEach((n) => {
-          nodesMap.set(n.id, {
-            id: n.id,
-            label: n.data.label,
-            category: n.data.category,
-            icon: n.data.icon,
-            replicas: n.data.replicas,
-            capacityQps: n.data.capacityQps,
-            latencyMs: n.data.latencyMs,
-            x: n.position.x,
-            y: n.position.y,
+        if (sharedSnapshot && sharedSnapshot.nodes.length > 0) {
+          seedNodes = sharedSnapshot.nodes;
+          seedEdges = sharedSnapshot.edges;
+          seedRps = sharedSnapshot.targetRps || seedRps;
+        } else if (seedNodes.length === 0) {
+          seedNodes = PLAYGROUND_TEMPLATES['url-shortener'].nodes;
+          seedEdges = PLAYGROUND_TEMPLATES['url-shortener'].edges;
+        }
+
+        transact(() => {
+          seedNodes.forEach((n) => {
+            nodesMap.set(n.id, {
+              id: n.id,
+              label: n.data.label,
+              category: n.data.category,
+              icon: n.data.icon,
+              replicas: n.data.replicas,
+              capacityQps: n.data.capacityQps,
+              latencyMs: n.data.latencyMs,
+              machineTier: n.data.machineTier,
+              x: n.position.x,
+              y: n.position.y,
+            });
           });
+          seedEdges.forEach((e) => {
+            edgesMap.set(e.id, { id: e.id, source: e.source, target: e.target });
+          });
+          settingsMap.set('targetRps', seedRps);
         });
-        seedEdges.forEach((e) => {
-          edgesMap.set(e.id, { id: e.id, source: e.source, target: e.target });
-        });
-        settingsMap.set('targetRps', seedRps);
-      });
+      }
+      seededRoomRef.current = activeRoomId;
+      syncFromYjs();
+    };
+
+    // If this client initiated the room or has no room URL param, seed immediately from current canvas
+    if (isRoomCreatorRef.current || !roomIdFromUrl) {
+      performSeedIfNeeded();
+    } else if (collabSynced) {
+      // If joining an existing room via URL, wait until synced from server/peers to avoid clobbering
+      if (nodesMap.size > 0) {
+        seededRoomRef.current = activeRoomId;
+        syncFromYjs();
+      } else {
+        performSeedIfNeeded();
+      }
     } else {
       syncFromYjs();
     }
@@ -312,7 +338,7 @@ export const PlaygroundPage: React.FC = () => {
       edgesMap.unobserve(syncFromYjs);
       settingsMap.unobserve(syncFromYjs);
     };
-  }, [activeRoomId, doc, transact]);
+  }, [activeRoomId, doc, transact, collabSynced]);
 
   // Fetch room metadata & member roles from server if in collab mode
   const refreshRoomMeta = useCallback(async () => {
@@ -683,6 +709,7 @@ export const PlaygroundPage: React.FC = () => {
   const onNodesChange = useCallback(
     (changes: NodeChange[]) => {
       if (isCollab) {
+        setCollabNodes((nds) => applyNodeChanges(changes, nds));
         if (userRole === 'viewer') return;
         const nodesMap = doc.getMap('nodes');
         transact(() => {
@@ -708,6 +735,7 @@ export const PlaygroundPage: React.FC = () => {
   const onEdgesChange = useCallback(
     (changes: EdgeChange[]) => {
       if (isCollab) {
+        setCollabEdges((eds) => applyEdgeChanges(changes, eds));
         if (userRole === 'viewer') return;
         const edgesMap = doc.getMap('edges');
         transact(() => {
@@ -1044,11 +1072,12 @@ export const PlaygroundPage: React.FC = () => {
     }
 
     if (!API_BASE) {
-      const studioRoomId = `room-${Date.now().toString(36)}-studio`;
-      const studioToken = Math.random().toString(36).slice(2, 10);
-      setActiveRoomId(studioRoomId);
-      setInviteToken(studioToken);
-      setSearchParams({ room: studioRoomId, token: studioToken });
+      const liveRoomId = `room-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
+      const liveToken = Math.random().toString(36).slice(2, 10);
+      isRoomCreatorRef.current = true;
+      setActiveRoomId(liveRoomId);
+      setInviteToken(liveToken);
+      setSearchParams({ room: liveRoomId, token: liveToken });
       setShareModalOpen(true);
       return;
     }
@@ -1061,6 +1090,7 @@ export const PlaygroundPage: React.FC = () => {
       });
       if (res.ok) {
         const data = await res.json();
+        isRoomCreatorRef.current = true;
         setActiveRoomId(data.roomId);
         setInviteToken(data.inviteToken);
         setSearchParams({ room: data.roomId, token: data.inviteToken });
@@ -1070,11 +1100,12 @@ export const PlaygroundPage: React.FC = () => {
       const err = await res.json();
       alert(err.error || 'Failed to create room on server');
     } catch (e: any) {
-      const offlineRoomId = `room-${Date.now().toString(36)}-studio`;
-      const offlineToken = Math.random().toString(36).slice(2, 10);
-      setActiveRoomId(offlineRoomId);
-      setInviteToken(offlineToken);
-      setSearchParams({ room: offlineRoomId, token: offlineToken });
+      const liveRoomId = `room-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
+      const liveToken = Math.random().toString(36).slice(2, 10);
+      isRoomCreatorRef.current = true;
+      setActiveRoomId(liveRoomId);
+      setInviteToken(liveToken);
+      setSearchParams({ room: liveRoomId, token: liveToken });
       setShareModalOpen(true);
     }
   };

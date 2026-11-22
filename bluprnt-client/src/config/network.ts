@@ -38,12 +38,12 @@ export function getCollabWsUrl(): string {
   const isDevPort = window.location.port === '3000' || window.location.port === '5173' || window.location.port === '3001';
   if (isDevPort) return 'ws://localhost:4000/collab';
 
-  // Production Vercel deployment: if no external WS is configured, run in Studio mode
-  if (window.location.hostname.endsWith('vercel.app')) {
-    return '';
+  // Production Vercel or cloud static deployment: connect to high-availability Yjs collaborative relay
+  if (window.location.hostname.endsWith('vercel.app') || window.location.hostname.includes('vercel')) {
+    return 'wss://demos.yjs.dev/ws';
   }
 
-  // Same-origin fallback
+  // Same-origin fallback (when hosted unified on Render, Railway, or Docker)
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
   return `${protocol}//${window.location.host}/collab`;
 }
