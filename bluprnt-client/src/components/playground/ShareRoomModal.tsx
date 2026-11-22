@@ -11,6 +11,7 @@ interface ShareRoomModalProps {
   members: Record<string, { userId: string; name: string; role: CollabRole }>;
   onUpdateRole: (userId: string, newRole: CollabRole) => void;
   onRegenerateToken: () => void;
+  serializedSnapshot?: string;
 }
 
 export const ShareRoomModal: React.FC<ShareRoomModalProps> = ({
@@ -22,12 +23,14 @@ export const ShareRoomModal: React.FC<ShareRoomModalProps> = ({
   members,
   onUpdateRole,
   onRegenerateToken,
+  serializedSnapshot,
 }) => {
   const [copied, setCopied] = useState(false);
 
   if (!isOpen) return null;
 
-  const inviteUrl = `${window.location.origin}/playground?room=${roomId}&token=${inviteToken}`;
+  const snapshotHash = serializedSnapshot ? `#d=${serializedSnapshot}` : (typeof window !== 'undefined' && window.location.hash ? window.location.hash : '');
+  const inviteUrl = `${window.location.origin}/playground?room=${roomId}&token=${inviteToken}${snapshotHash}`;
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(inviteUrl);

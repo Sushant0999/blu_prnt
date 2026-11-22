@@ -68,6 +68,7 @@ import { db } from '../db/database';
 import { SavedTopologyDesign } from '../types/storage';
 
 import { getApiBaseUrl } from '../config/network';
+import { serializeTopology, deserializeTopology } from '../core/algorithms/topologySerializer';
 
 const nodeTypes = {
   systemNode: SystemCustomNode,
@@ -85,6 +86,28 @@ export const PlaygroundPage: React.FC = () => {
   const roomIdFromUrl = searchParams.get('room');
   const inviteTokenFromUrl = searchParams.get('token') || '';
 
+  // Check if a shared architecture snapshot is present in URL hash or search params
+  const sharedSnapshot = useMemo(() => {
+    try {
+      if (typeof window === 'undefined') return null;
+      let raw = '';
+      if (window.location.hash.startsWith('#d=')) {
+        raw = window.location.hash.slice(3);
+      } else if (window.location.hash.startsWith('#design=')) {
+        raw = window.location.hash.slice(8);
+      } else if (searchParams.get('d')) {
+        raw = searchParams.get('d') || '';
+      }
+      if (raw) {
+        return deserializeTopology(raw);
+      }
+    } catch (e) {
+      console.warn('Failed to parse URL topology snapshot:', e);
+    }
+    return null;
+  }, [searchParams]);
+
+  const [sharedBannerVisible, setSharedBannerVisible] = useState(Boolean(sharedSnapshot));
   const [activeRoomId, setActiveRoomId] = useState<string | null>(roomIdFromUrl);
   const [inviteToken, setInviteToken] = useState<string>(inviteTokenFromUrl);
   const [userEmail] = useState<string>(() => localStorage.getItem('bluprnt_user_email') || 'engineer@example.com');
@@ -108,8 +131,11 @@ export const PlaygroundPage: React.FC = () => {
   const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Local non-collab state (Restores auto-saved design from localStorage if available)
+  // Local non-collab state (Restores snapshot from URL, or auto-saved design from localStorage)
   const [localNodes, setLocalNodes] = useState<Node<SystemNodeData>[]>(() => {
+    if (sharedSnapshot && sharedSnapshot.nodes.length > 0) {
+      return sharedSnapshot.nodes;
+    }
     try {
       const saved = localStorage.getItem('bluprnt_current_playground');
       if (saved) {
@@ -127,6 +153,9 @@ export const PlaygroundPage: React.FC = () => {
   });
 
   const [localEdges, setLocalEdges] = useState<Edge[]>(() => {
+    if (sharedSnapshot && sharedSnapshot.edges.length > 0) {
+      return sharedSnapshot.edges;
+    }
     try {
       const saved = localStorage.getItem('bluprnt_current_playground');
       if (saved) {
@@ -138,6 +167,9 @@ export const PlaygroundPage: React.FC = () => {
   });
 
   const [targetRps, setTargetRps] = useState<number>(() => {
+    if (sharedSnapshot && sharedSnapshot.targetRps) {
+      return sharedSnapshot.targetRps;
+    }
     try {
       const saved = localStorage.getItem('bluprnt_current_playground');
       if (saved) {
@@ -238,9 +270,19 @@ export const PlaygroundPage: React.FC = () => {
     settingsMap.observe(syncFromYjs);
 
     if (nodesMap.size === 0) {
-      // Seed the shared room with the creator's active canvas topology
-      const seedNodes = localNodes.length > 0 ? localNodes : PLAYGROUND_TEMPLATES['url-shortener'].nodes;
-      const seedEdges = localNodes.length > 0 ? localEdges : PLAYGROUND_TEMPLATES['url-shortener'].edges;
+      // Seed the shared room with the creator's active canvas topology (or shared snapshot)
+      let seedNodes = localNodes;
+      let seedEdges = localEdges;
+      let seedRps = targetRps || 30000;
+
+      if (sharedSnapshot && sharedSnapshot.nodes.length > 0) {
+        seedNodes = sharedSnapshot.nodes;
+        seedEdges = sharedSnapshot.edges;
+        seedRps = sharedSnapshot.targetRps || seedRps;
+      } else if (seedNodes.length === 0) {
+        seedNodes = PLAYGROUND_TEMPLATES['url-shortener'].nodes;
+        seedEdges = PLAYGROUND_TEMPLATES['url-shortener'].edges;
+      }
 
       transact(() => {
         seedNodes.forEach((n) => {
@@ -259,7 +301,7 @@ export const PlaygroundPage: React.FC = () => {
         seedEdges.forEach((e) => {
           edgesMap.set(e.id, { id: e.id, source: e.source, target: e.target });
         });
-        settingsMap.set('targetRps', targetRps || 30000);
+        settingsMap.set('targetRps', seedRps);
       });
     } else {
       syncFromYjs();
@@ -995,6 +1037,12 @@ export const PlaygroundPage: React.FC = () => {
 
   // Start live collaboration room
   const handleStartCollab = async () => {
+    // Generate snapshot hash of current canvas so invite links always carry the full architecture
+    const serializedHash = serializeTopology(currentNodes, currentEdges, targetRps);
+    if (typeof window !== 'undefined') {
+      window.location.hash = `d=${serializedHash}`;
+    }
+
     if (!API_BASE) {
       const studioRoomId = `room-${Date.now().toString(36)}-studio`;
       const studioToken = Math.random().toString(36).slice(2, 10);
@@ -1310,6 +1358,23 @@ export const PlaygroundPage: React.FC = () => {
           {/* Live Collab Remote Cursors Overlay */}
           {isCollab && <CollabCursors peers={peers} />}
 
+          {/* Shared Architecture Snapshot Loaded Banner */}
+          {sharedBannerVisible && (
+            <div className="absolute top-4 right-4 z-30 bg-emerald-950/90 border border-emerald-600/70 text-emerald-200 px-3.5 py-2 rounded-2xl shadow-2xl backdrop-blur-md flex items-center gap-2.5 text-xs animate-in fade-in slide-in-from-top-2">
+              <Sparkles className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>
+                Loaded shared architecture snapshot (<strong>{currentNodes.length}</strong> nodes, <strong>{currentEdges.length}</strong> connections).
+              </span>
+              <button
+                onClick={() => setSharedBannerVisible(false)}
+                className="ml-2 hover:bg-emerald-900/60 rounded-full p-1 text-emerald-400 hover:text-white transition"
+                title="Dismiss"
+              >
+                ✕
+              </button>
+            </div>
+          )}
+
           {/* Floating Chaos Studio Bar */}
           <div className="absolute top-4 left-4 z-20 pointer-events-auto">
             <ChaosStudio
@@ -1422,6 +1487,7 @@ export const PlaygroundPage: React.FC = () => {
             inviteToken={inviteToken}
             userRole={userRole}
             members={roomMembers}
+            serializedSnapshot={serializeTopology(currentNodes, currentEdges, targetRps)}
             onUpdateRole={async (targetUserId, newRole) => {
               await fetch(`${API_BASE}/api/collab/room/${activeRoomId}/role`, {
                 method: 'POST',

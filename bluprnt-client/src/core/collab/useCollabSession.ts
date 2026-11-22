@@ -156,12 +156,21 @@ export function useCollabSession(roomId: string | null, userEmail: string, initi
     } else if (!isLocalOnly) {
       // Automatic P2P WebRTC Multi-User Sharing (100% works on Vercel without a backend!)
       try {
-        webrtcProvider = new WebrtcProvider(`bluprnt-studio-${roomId}`, doc, {
+        webrtcProvider = new WebrtcProvider(`bluprnt-room-${roomId}`, doc, {
           signaling: [
             'wss://signaling.yjs.dev',
             'wss://y-webrtc-signaling-eu.herokuapp.com',
             'wss://y-webrtc-signaling-us.herokuapp.com',
           ],
+          peerOpts: {
+            config: {
+              iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' },
+                { urls: 'stun:global.stun.twilio.com:3478' },
+              ],
+            },
+          },
         });
         providerRef.current = webrtcProvider as any;
 
