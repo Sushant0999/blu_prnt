@@ -10,6 +10,13 @@ export interface PlaygroundTemplate {
 }
 
 export const PLAYGROUND_TEMPLATES: Record<string, PlaygroundTemplate> = {
+  'blank': {
+    id: 'blank',
+    name: '✦ Blank Canvas (Draw from Scratch)',
+    description: 'Start with a completely clean whiteboard canvas and design your custom distributed system from scratch.',
+    nodes: [],
+    edges: [],
+  },
   'url-shortener': {
     id: 'url-shortener',
     name: 'Global URL Shortener (TinyURL)',

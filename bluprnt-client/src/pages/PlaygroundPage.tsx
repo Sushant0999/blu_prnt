@@ -38,6 +38,8 @@ import {
   PanelLeft,
   PanelRight,
   Trophy,
+  Plus,
+  FilePlus,
 } from 'lucide-react';
 import * as Y from 'yjs';
 import { SystemCustomNode, SystemNodeData } from '../components/playground/SystemCustomNode';
@@ -47,7 +49,7 @@ import { SimulationResultsPanel } from '../components/playground/SimulationResul
 import { PlaygroundRightSidebar } from '../components/playground/PlaygroundRightSidebar';
 import { SavedDesignsModal } from '../components/playground/SavedDesignsModal';
 import { PLAYGROUND_TEMPLATES, PlaygroundTemplate } from '../components/playground/playgroundTemplates';
-import { NodeDefinition } from '../core/registry/nodeRegistry';
+import { NodeDefinition, NODE_REGISTRY } from '../core/registry/nodeRegistry';
 import { evaluateBottlenecks, TopologySimulationResult } from '../core/algorithms/bottleneck';
 import { computeCriticalPathLatency, DagLatencyResult } from '../core/algorithms/dagLatency';
 import { useCollabSession, CollabRole } from '../core/collab/useCollabSession';
@@ -129,7 +131,17 @@ export const PlaygroundPage: React.FC = () => {
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [roomMembers, setRoomMembers] = useState<Record<string, { userId: string; name: string; role: CollabRole }>>({});
   const [snapshots, setSnapshots] = useState<RoomVersionSnapshot[]>([]);
-  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('url-shortener');
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>(() => {
+    try {
+      const saved = localStorage.getItem('bluprnt_current_playground');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.isScratch || parsed.templateId === 'blank') return 'blank';
+        if (parsed.templateId && PLAYGROUND_TEMPLATES[parsed.templateId]) return parsed.templateId;
+      }
+    } catch (e) {}
+    return 'url-shortener';
+  });
 
   // React Flow instance for coordinates and drag-and-drop
   const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
@@ -144,6 +156,9 @@ export const PlaygroundPage: React.FC = () => {
       const saved = localStorage.getItem('bluprnt_current_playground');
       if (saved) {
         const parsed = JSON.parse(saved);
+        if (parsed.isScratch || parsed.templateId === 'blank') {
+          return [];
+        }
         if (parsed.nodes && parsed.nodes.length > 0) {
           // If cached nodes have old overlapping positions (deltaX < 400), use updated spacious template
           const isCramped =
@@ -164,6 +179,9 @@ export const PlaygroundPage: React.FC = () => {
       const saved = localStorage.getItem('bluprnt_current_playground');
       if (saved) {
         const parsed = JSON.parse(saved);
+        if (parsed.isScratch || parsed.templateId === 'blank') {
+          return [];
+        }
         if (parsed.edges) return parsed.edges;
       }
     } catch (e) {}
@@ -189,15 +207,21 @@ export const PlaygroundPage: React.FC = () => {
 
   // Auto-save local playground to localStorage
   useEffect(() => {
-    if (!activeRoomId && localNodes.length > 0) {
+    if (!activeRoomId) {
       try {
         localStorage.setItem(
           'bluprnt_current_playground',
-          JSON.stringify({ nodes: localNodes, edges: localEdges, targetRps })
+          JSON.stringify({
+            nodes: localNodes,
+            edges: localEdges,
+            targetRps,
+            isScratch: localNodes.length === 0,
+            templateId: selectedTemplateId,
+          })
         );
       } catch (e) {}
     }
-  }, [localNodes, localEdges, targetRps, activeRoomId]);
+  }, [localNodes, localEdges, targetRps, activeRoomId, selectedTemplateId]);
 
   // Collab Session Hook
   const {
@@ -293,7 +317,7 @@ export const PlaygroundPage: React.FC = () => {
           seedNodes = sharedSnapshot.nodes;
           seedEdges = sharedSnapshot.edges;
           seedRps = sharedSnapshot.targetRps || seedRps;
-        } else if (seedNodes.length === 0) {
+        } else if (seedNodes.length === 0 && selectedTemplateId !== 'blank') {
           seedNodes = PLAYGROUND_TEMPLATES['url-shortener'].nodes;
           seedEdges = PLAYGROUND_TEMPLATES['url-shortener'].edges;
         }
@@ -892,9 +916,60 @@ export const PlaygroundPage: React.FC = () => {
     }
   };
 
+  // Redraw from scratch / clear canvas completely
+  const handleRedrawFromScratch = useCallback(
+    (promptUser = true) => {
+      if (
+        promptUser &&
+        !window.confirm(
+          'Start with a blank canvas to redraw your architecture from scratch? All existing nodes and connections will be cleared.'
+        )
+      ) {
+        return;
+      }
+      setSelectedTemplateId('blank');
+      if (isCollab) {
+        if (userRole === 'viewer') {
+          alert('You have Viewer permissions in this room. Edits are disabled.');
+          return;
+        }
+        const nodesMap = doc.getMap('nodes');
+        const edgesMap = doc.getMap('edges');
+        transact(() => {
+          nodesMap.clear();
+          edgesMap.clear();
+        });
+      } else {
+        setLocalNodes([]);
+        setLocalEdges([]);
+      }
+      setSelectedNodeId(null);
+      setChaosState({
+        isSpikeActive: false,
+        spikeFactor: 1,
+        deadNodeIds: [],
+        severedEdgeIds: [],
+        jitterMs: 0,
+      });
+      setLocalSimulationResult(null);
+      setLocalDagResult(null);
+      try {
+        localStorage.setItem(
+          'bluprnt_current_playground',
+          JSON.stringify({ nodes: [], edges: [], targetRps, isScratch: true, templateId: 'blank' })
+        );
+      } catch (e) {}
+    },
+    [isCollab, userRole, doc, transact, targetRps]
+  );
+
   // Switch pre-built architecture template
   const handleLoadTemplate = (tplId: string) => {
     setSelectedTemplateId(tplId);
+    if (tplId === 'blank') {
+      handleRedrawFromScratch(false);
+      return;
+    }
     const tpl = PLAYGROUND_TEMPLATES[tplId];
     if (!tpl) return;
 
@@ -1049,23 +1124,9 @@ export const PlaygroundPage: React.FC = () => {
     e.target.value = '';
   };
 
-  // Clear Canvas
+  // Clear Canvas / Redraw from scratch
   const handleClearCanvas = () => {
-    if (window.confirm('Clear all nodes and connections from the canvas?')) {
-      if (isCollab) {
-        if (userRole === 'viewer') return;
-        const nodesMap = doc.getMap('nodes');
-        const edgesMap = doc.getMap('edges');
-        transact(() => {
-          nodesMap.clear();
-          edgesMap.clear();
-        });
-      } else {
-        setLocalNodes([]);
-        setLocalEdges([]);
-        setSelectedNodeId(null);
-      }
-    }
+    handleRedrawFromScratch(true);
   };
 
   // Start live collaboration room
@@ -1309,7 +1370,16 @@ export const PlaygroundPage: React.FC = () => {
             </button>
 
             <button
-              onClick={handleClearCanvas}
+              onClick={() => handleRedrawFromScratch(true)}
+              className="h-7 px-1.5 flex items-center gap-1 rounded-md text-xs font-semibold text-rose-600 dark:text-rose-400 hover:text-white hover:bg-rose-600 dark:hover:bg-rose-600 transition"
+              title="Redraw from Scratch (Clear canvas to start fresh)"
+            >
+              <FilePlus className="w-3.5 h-3.5" />
+              <span className="hidden xl:inline text-[11px]">Scratch</span>
+            </button>
+
+            <button
+              onClick={() => handleRedrawFromScratch(true)}
               className="h-7 w-7 flex items-center justify-center rounded-md text-xs text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-950/60 transition"
               title="Clear Canvas"
             >
@@ -1465,6 +1535,65 @@ export const PlaygroundPage: React.FC = () => {
               className="!bg-white/90 dark:!bg-slate-900/90 !border !border-slate-200 dark:!border-slate-800 !rounded-xl !shadow-md"
             />
           </ReactFlow>
+
+          {/* Interactive Starter / Redraw From Scratch Empty State */}
+          {currentNodes.length === 0 && (
+            <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none p-4">
+              <div className="pointer-events-auto max-w-md w-full bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-2xl border border-slate-200/80 dark:border-slate-800/80 p-6 shadow-2xl text-center space-y-4 animate-in fade-in zoom-in-95 duration-200">
+                <div className="w-12 h-12 rounded-2xl bg-cyan-500/10 dark:bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 flex items-center justify-center mx-auto ring-1 ring-cyan-500/30">
+                  <FilePlus className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white">Blank Canvas (Draw from Scratch)</h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                    Drag components from the catalog on the left, or click below to quickly drop starter nodes onto your whiteboard.
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 gap-2 pt-1">
+                  <button
+                    onClick={() => handleAddNodeWithPosition(NODE_REGISTRY['client-web'], { x: 140, y: 220 })}
+                    className="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-cyan-500/50 bg-slate-50 dark:bg-slate-800/60 hover:bg-cyan-50 dark:hover:bg-cyan-950/40 text-left transition group shadow-sm"
+                  >
+                    <span className="text-lg">🌐</span>
+                    <div className="min-w-0">
+                      <div className="text-xs font-semibold text-slate-800 dark:text-slate-200 group-hover:text-cyan-600 dark:group-hover:text-cyan-400 truncate">+ Web Client</div>
+                      <div className="text-[10px] text-slate-500 truncate">Entry client</div>
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => handleAddNodeWithPosition(NODE_REGISTRY['api-gateway'], { x: 390, y: 220 })}
+                    className="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-cyan-500/50 bg-slate-50 dark:bg-slate-800/60 hover:bg-cyan-50 dark:hover:bg-cyan-950/40 text-left transition group shadow-sm"
+                  >
+                    <span className="text-lg">🚪</span>
+                    <div className="min-w-0">
+                      <div className="text-xs font-semibold text-slate-800 dark:text-slate-200 group-hover:text-cyan-600 dark:group-hover:text-cyan-400 truncate">+ API Gateway</div>
+                      <div className="text-[10px] text-slate-500 truncate">Reverse proxy</div>
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => handleAddNodeWithPosition(NODE_REGISTRY['service-app'], { x: 640, y: 220 })}
+                    className="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-cyan-500/50 bg-slate-50 dark:bg-slate-800/60 hover:bg-cyan-50 dark:hover:bg-cyan-950/40 text-left transition group shadow-sm"
+                  >
+                    <span className="text-lg">⚙️</span>
+                    <div className="min-w-0">
+                      <div className="text-xs font-semibold text-slate-800 dark:text-slate-200 group-hover:text-cyan-600 dark:group-hover:text-cyan-400 truncate">+ Microservice</div>
+                      <div className="text-[10px] text-slate-500 truncate">Application node</div>
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => handleAddNodeWithPosition(NODE_REGISTRY['db-postgres-primary'], { x: 890, y: 220 })}
+                    className="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-cyan-500/50 bg-slate-50 dark:bg-slate-800/60 hover:bg-cyan-50 dark:hover:bg-cyan-950/40 text-left transition group shadow-sm"
+                  >
+                    <span className="text-lg">🐘</span>
+                    <div className="min-w-0">
+                      <div className="text-xs font-semibold text-slate-800 dark:text-slate-200 group-hover:text-cyan-600 dark:group-hover:text-cyan-400 truncate">+ PostgreSQL</div>
+                      <div className="text-[10px] text-slate-500 truncate">Primary database</div>
+                    </div>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Bottom Telemetry Results Drawer (shown when triggered) */}
           {showResultsPanel && (activeSimulation || activeDagResult) && (
