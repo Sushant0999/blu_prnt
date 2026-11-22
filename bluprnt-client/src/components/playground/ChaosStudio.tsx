@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Flame,
   Skull,
@@ -7,6 +7,7 @@ import {
   RotateCcw,
   AlertTriangle,
   Zap,
+  ChevronLeft,
 } from 'lucide-react';
 
 export interface ChaosState {
@@ -38,17 +39,42 @@ export const ChaosStudio: React.FC<ChaosStudioProps> = ({
   hasNodes,
   hasEdges,
 }) => {
+  const [isExpanded, setIsExpanded] = useState(true);
+
   const isAnyChaosActive =
     chaosState.isSpikeActive ||
     chaosState.deadNodeIds.length > 0 ||
     chaosState.severedEdgeIds.length > 0 ||
     chaosState.jitterMs > 0;
 
+  if (!isExpanded) {
+    return (
+      <button
+        onClick={() => setIsExpanded(true)}
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-slate-900/90 backdrop-blur-md border border-slate-800 shadow-xl text-xs font-mono text-slate-300 hover:text-white hover:border-slate-700 transition"
+        title="Open Chaos Studio Controls"
+      >
+        <Zap className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+        <span className="font-bold text-[11px]">Chaos Studio</span>
+        {isAnyChaosActive && (
+          <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping ml-1" />
+        )}
+      </button>
+    );
+  }
+
   return (
-    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-slate-900/90 backdrop-blur-md border border-slate-800 shadow-2xl text-xs font-mono select-none">
-      <div className="flex items-center gap-1.5 pr-2 border-r border-slate-800 text-slate-300">
+    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-slate-900/90 backdrop-blur-md border border-slate-800 shadow-2xl text-xs font-mono select-none overflow-x-auto no-scrollbar">
+      <div className="flex items-center gap-1.5 pr-2 border-r border-slate-800 text-slate-300 shrink-0">
         <Zap className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
         <span className="font-bold text-[11px] tracking-tight">Chaos Studio</span>
+        <button
+          onClick={() => setIsExpanded(false)}
+          className="ml-1 p-0.5 rounded text-slate-500 hover:text-slate-300 hover:bg-slate-800"
+          title="Minimize Chaos Studio"
+        >
+          <ChevronLeft className="w-3 h-3" />
+        </button>
       </div>
 
       {/* 10x Traffic Spike */}

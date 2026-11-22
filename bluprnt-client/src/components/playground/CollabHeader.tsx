@@ -39,10 +39,10 @@ export const CollabHeader: React.FC<CollabHeaderProps> = ({
   onRedo,
 }) => {
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
       {/* Status Pill */}
       <div
-        className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider border ${
+        className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider border shrink-0 ${
           status === 'connected'
             ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800'
             : status === 'connecting'
@@ -65,7 +65,7 @@ export const CollabHeader: React.FC<CollabHeaderProps> = ({
 
       {/* Role Badge */}
       <span
-        className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md ${
+        className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md shrink-0 ${
           role === 'owner'
             ? 'bg-brand-100 dark:bg-brand-950 text-brand-700 dark:text-brand-300'
             : role === 'editor'
@@ -77,7 +77,7 @@ export const CollabHeader: React.FC<CollabHeaderProps> = ({
       </span>
 
       {/* Peer Avatars Stack */}
-      <div className="flex items-center -space-x-1.5 overflow-hidden pl-1">
+      <div className="flex items-center -space-x-1.5 overflow-hidden pl-1 shrink-0">
         {peers.slice(0, 4).map((p) => (
           <div
             key={p.clientId}
@@ -89,14 +89,14 @@ export const CollabHeader: React.FC<CollabHeaderProps> = ({
           </div>
         ))}
         {peers.length > 4 && (
-          <div className="w-6 h-6 rounded-full bg-slate-200 dark:bg-slate-700 border-2 border-white dark:border-slate-900 flex items-center justify-center text-[9px] font-bold text-slate-600 dark:text-slate-300">
+          <div className="w-6 h-6 rounded-full bg-slate-200 dark:bg-slate-700 border-2 border-white dark:border-slate-900 flex items-center justify-center text-[9px] font-bold text-slate-600 dark:text-slate-300 shrink-0">
             +{peers.length - 4}
           </div>
         )}
       </div>
 
       {/* Scoped Undo / Redo */}
-      <div className="flex items-center bg-slate-100 dark:bg-slate-800 rounded-lg p-0.5">
+      <div className="flex items-center bg-slate-100 dark:bg-slate-800 rounded-lg p-0.5 shrink-0">
         <button
           onClick={onUndo}
           disabled={role === 'viewer'}
@@ -118,7 +118,7 @@ export const CollabHeader: React.FC<CollabHeaderProps> = ({
       {/* Chat & Comments Toggle */}
       <button
         onClick={onToggleChat}
-        className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 relative"
+        className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 relative shrink-0"
         title="Open Room Chat & Comments"
       >
         <MessageSquare className="w-4 h-4" />
@@ -132,7 +132,7 @@ export const CollabHeader: React.FC<CollabHeaderProps> = ({
       {/* Version History */}
       <button
         onClick={onOpenHistory}
-        className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300"
+        className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 shrink-0"
         title="Version Snapshots"
       >
         <History className="w-4 h-4" />
@@ -141,7 +141,7 @@ export const CollabHeader: React.FC<CollabHeaderProps> = ({
       {/* Share / Invite */}
       <button
         onClick={onOpenShare}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold shadow-sm transition-all"
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold shadow-sm transition-all shrink-0"
       >
         <Share2 className="w-3.5 h-3.5" />
         Share
