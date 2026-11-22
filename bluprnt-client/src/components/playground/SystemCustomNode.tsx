@@ -121,21 +121,21 @@ export const SystemCustomNode = memo(({ data, selected }: NodeProps<SystemNodeDa
   const IconComponent = ICON_MAP[data.icon] || Server;
   const metric = data.simulationMetric;
 
-  let statusRingClass = 'border-slate-800 bg-slate-900/95 text-slate-100';
+  let statusRingClass = 'border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 text-slate-900 dark:text-slate-100 shadow-md';
   if (selected) {
-    statusRingClass = 'border-cyan-500 ring-2 ring-cyan-500/50 bg-slate-900 shadow-xl shadow-cyan-500/10';
+    statusRingClass = 'border-cyan-500 ring-2 ring-cyan-500/50 bg-white dark:bg-slate-900 shadow-xl shadow-cyan-500/10 text-slate-900 dark:text-slate-100';
   }
   if (metric) {
     if (metric.status === 'bottleneck') {
-      statusRingClass = 'border-rose-500 ring-2 ring-rose-500/80 bg-rose-950/20 shadow-xl shadow-rose-500/20';
+      statusRingClass = 'border-rose-500 ring-2 ring-rose-500/80 bg-rose-50/90 dark:bg-rose-950/20 text-slate-900 dark:text-slate-100 shadow-xl shadow-rose-500/20';
     } else if (metric.status === 'warning') {
-      statusRingClass = 'border-amber-500 ring-2 ring-amber-500/60 bg-amber-950/20 shadow-lg shadow-amber-500/10';
+      statusRingClass = 'border-amber-500 ring-2 ring-amber-500/60 bg-amber-50/90 dark:bg-amber-950/20 text-slate-900 dark:text-slate-100 shadow-lg shadow-amber-500/10';
     } else {
-      statusRingClass = 'border-emerald-500/80 ring-1 ring-emerald-500/40 bg-slate-900';
+      statusRingClass = 'border-emerald-500/80 ring-1 ring-emerald-500/40 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100';
     }
   }
   if (data.isDead) {
-    statusRingClass = 'border-rose-600 ring-2 ring-rose-500/90 bg-rose-950/50 text-rose-200 opacity-75';
+    statusRingClass = 'border-rose-600 ring-2 ring-rose-500/90 bg-rose-100/90 dark:bg-rose-950/50 text-rose-900 dark:text-rose-200 opacity-75';
   }
 
   const handleMinus = (e: React.MouseEvent) => {
@@ -194,12 +194,12 @@ export const SystemCustomNode = memo(({ data, selected }: NodeProps<SystemNodeDa
       <Handle
         type="target"
         position={Position.Left}
-        className="w-3.5 h-3.5 !bg-cyan-500 border-2 border-slate-950 !-left-2 z-30 transition-transform hover:scale-125"
+        className="w-3.5 h-3.5 !bg-cyan-500 border-2 border-white dark:border-slate-950 !-left-2 z-30 transition-transform hover:scale-125"
       />
       <Handle
         type="target"
         position={Position.Top}
-        className="w-3.5 h-3.5 !bg-cyan-500 border-2 border-slate-950 !-top-2 z-30 transition-transform hover:scale-125"
+        className="w-3.5 h-3.5 !bg-cyan-500 border-2 border-white dark:border-slate-950 !-top-2 z-30 transition-transform hover:scale-125"
       />
 
       {/* Header: Icon, Category & Node Label */}
@@ -212,16 +212,16 @@ export const SystemCustomNode = memo(({ data, selected }: NodeProps<SystemNodeDa
               ? 'bg-amber-600'
               : selected
               ? 'bg-cyan-600'
-              : 'bg-slate-800'
+              : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-white'
           }`}
         >
           <IconComponent className="w-4 h-4" />
         </div>
         <div className="flex-1 min-w-0">
-          <span className="block text-[9px] font-mono font-bold uppercase tracking-wider text-cyan-400 truncate">
+          <span className="block text-[9px] font-mono font-bold uppercase tracking-wider text-cyan-600 dark:text-cyan-400 truncate">
             {data.category}
           </span>
-          <h4 className="text-xs font-bold text-white truncate tracking-tight mt-0.5" title={data.label}>
+          <h4 className="text-xs font-bold text-slate-900 dark:text-white truncate tracking-tight mt-0.5" title={data.label}>
             {data.label}
           </h4>
         </div>
@@ -232,7 +232,7 @@ export const SystemCustomNode = memo(({ data, selected }: NodeProps<SystemNodeDa
         <span className="text-slate-500 uppercase tracking-wider text-[9px]">Tier:</span>
         <button
           onClick={handleCycleTier}
-          className="px-2 py-0.5 rounded-md bg-slate-950/80 border border-slate-800 hover:border-cyan-500 text-cyan-300 font-bold transition flex items-center gap-1"
+          className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 hover:border-cyan-500 text-cyan-600 dark:text-cyan-300 font-bold transition flex items-center gap-1"
           title="Click to cycle machine tier (Micro → Standard → Compute → Memory → Metal)"
         >
           <span>{tierDef.badge}</span>
@@ -240,25 +240,25 @@ export const SystemCustomNode = memo(({ data, selected }: NodeProps<SystemNodeDa
       </div>
 
       {/* Row 1: Horizontal Replicas Stepper */}
-      <div className="mt-3 pt-2.5 border-t border-slate-800/80 flex items-center justify-between text-xs">
-        <span className="text-[10px] font-mono font-semibold uppercase text-slate-400">
+      <div className="mt-3 pt-2.5 border-t border-slate-200 dark:border-slate-800/80 flex items-center justify-between text-xs">
+        <span className="text-[10px] font-mono font-semibold uppercase text-slate-500 dark:text-slate-400">
           Replicas
         </span>
-        <div className="flex items-center bg-slate-950/80 border border-slate-800 rounded-lg p-0.5 font-mono">
+        <div className="flex items-center bg-slate-100 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 rounded-lg p-0.5 font-mono">
           <button
             onClick={handleMinus}
             disabled={data.replicas <= 1}
-            className="w-5 h-5 flex items-center justify-center rounded text-slate-400 hover:text-white hover:bg-slate-800 disabled:opacity-30 transition"
+            className="w-5 h-5 flex items-center justify-center rounded text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800 disabled:opacity-30 transition"
             title="Decrease replica count"
           >
             -
           </button>
-          <span className="w-6 text-center font-bold text-white text-[11px]">
+          <span className="w-6 text-center font-bold text-slate-900 dark:text-white text-[11px]">
             {data.replicas}
           </span>
           <button
             onClick={handlePlus}
-            className="w-5 h-5 flex items-center justify-center rounded text-slate-400 hover:text-white hover:bg-slate-800 transition"
+            className="w-5 h-5 flex items-center justify-center rounded text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800 transition"
             title="Increase replica count"
           >
             +
@@ -276,7 +276,7 @@ export const SystemCustomNode = memo(({ data, selected }: NodeProps<SystemNodeDa
               data.onUpdateCapacity(Number(val));
             }
           }}
-          className="p-1.5 rounded-lg bg-slate-950/70 border border-slate-800/80 hover:border-cyan-500/60 text-slate-300 hover:text-cyan-300 flex items-center justify-between transition group/cap"
+          className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800/80 hover:border-cyan-500/60 text-slate-700 dark:text-slate-300 hover:text-cyan-600 dark:hover:text-cyan-300 flex items-center justify-between transition group/cap"
           title="Click to edit capacity QPS"
         >
           <span className="text-slate-500 text-[9px] uppercase">Cap:</span>
@@ -291,7 +291,7 @@ export const SystemCustomNode = memo(({ data, selected }: NodeProps<SystemNodeDa
               data.onUpdateLatency(Number(val));
             }
           }}
-          className="p-1.5 rounded-lg bg-slate-950/70 border border-slate-800/80 hover:border-cyan-500/60 text-slate-300 hover:text-cyan-300 flex items-center justify-between transition group/lat"
+          className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800/80 hover:border-cyan-500/60 text-slate-700 dark:text-slate-300 hover:text-cyan-600 dark:hover:text-cyan-300 flex items-center justify-between transition group/lat"
           title="Click to edit latency (ms)"
         >
           <span className="text-slate-500 text-[9px] uppercase">Lat:</span>

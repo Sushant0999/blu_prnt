@@ -117,7 +117,7 @@ export const PlaygroundRightSidebar: React.FC<PlaygroundRightSidebarProps> = ({
     return (
       <button
         onClick={onToggle}
-        className="absolute top-4 right-0 z-20 flex items-center justify-center w-8 h-12 bg-slate-900 border-l border-y border-slate-800 rounded-l-xl text-slate-400 hover:text-cyan-400 hover:bg-slate-800 shadow-xl transition"
+        className="absolute top-4 right-0 z-20 flex items-center justify-center w-8 h-12 bg-white dark:bg-slate-900 border-l border-y border-slate-200 dark:border-slate-800 rounded-l-xl text-slate-500 dark:text-slate-400 hover:text-cyan-600 dark:hover:text-cyan-400 hover:bg-slate-100 dark:hover:bg-slate-800 shadow-xl transition"
         title="Open Properties & Telemetry Inspector"
       >
         <ChevronLeft className="w-4 h-4" />
@@ -126,18 +126,18 @@ export const PlaygroundRightSidebar: React.FC<PlaygroundRightSidebarProps> = ({
   }
 
   return (
-    <div className="w-80 sm:w-88 h-full bg-slate-900 border-l border-slate-800 flex flex-col shrink-0 z-20 shadow-2xl transition-all duration-200 select-none">
+    <div className="w-full sm:w-80 md:w-88 h-full bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 flex flex-col shrink-0 z-20 shadow-2xl transition-all duration-200 select-none">
       {/* Sidebar Header */}
-      <div className="h-14 px-4 border-b border-slate-800 flex items-center justify-between shrink-0 bg-slate-900/95">
+      <div className="h-14 px-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between shrink-0 bg-white/95 dark:bg-slate-900/95">
         <div className="flex items-center space-x-2.5">
-          <div className="p-1.5 rounded-lg bg-cyan-950/80 border border-cyan-800/80 text-cyan-400">
+          <div className="p-1.5 rounded-lg bg-cyan-100 dark:bg-cyan-950/80 border border-cyan-200 dark:border-cyan-800/80 text-cyan-600 dark:text-cyan-400">
             {selectedNode ? <Cpu className="w-4 h-4" /> : <Layers className="w-4 h-4" />}
           </div>
           <div>
-            <h3 className="text-xs font-bold text-white uppercase tracking-wider font-mono">
+            <h3 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider font-mono">
               {selectedNode ? 'Node Inspector' : 'System Overview'}
             </h3>
-            <span className="text-[10px] text-slate-400">
+            <span className="text-[10px] text-slate-500 dark:text-slate-400">
               {selectedNode ? selectedNode.data.category : 'Architecture Topology'}
             </span>
           </div>
@@ -147,7 +147,7 @@ export const PlaygroundRightSidebar: React.FC<PlaygroundRightSidebarProps> = ({
           {selectedNode && (
             <button
               onClick={onClearSelection}
-              className="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-400 hover:text-white transition"
+              className="text-[10px] px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition"
               title="Deselect Node"
             >
               Overview
@@ -155,7 +155,7 @@ export const PlaygroundRightSidebar: React.FC<PlaygroundRightSidebarProps> = ({
           )}
           <button
             onClick={onToggle}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition"
+            className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition"
             title="Collapse Sidebar"
           >
             <ChevronRight className="w-4 h-4" />

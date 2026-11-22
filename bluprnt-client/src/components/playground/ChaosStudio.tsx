@@ -51,10 +51,10 @@ export const ChaosStudio: React.FC<ChaosStudioProps> = ({
     return (
       <button
         onClick={() => setIsExpanded(true)}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-slate-900/90 backdrop-blur-md border border-slate-800 shadow-xl text-xs font-mono text-slate-300 hover:text-white hover:border-slate-700 transition"
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-white/95 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200 dark:border-slate-800 shadow-xl text-xs font-mono text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 dark:hover:border-slate-700 transition"
         title="Open Chaos Studio Controls"
       >
-        <Zap className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+        <Zap className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400 animate-pulse" />
         <span className="font-bold text-[11px]">Chaos Studio</span>
         {isAnyChaosActive && (
           <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping ml-1" />
@@ -64,13 +64,13 @@ export const ChaosStudio: React.FC<ChaosStudioProps> = ({
   }
 
   return (
-    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-slate-900/90 backdrop-blur-md border border-slate-800 shadow-2xl text-xs font-mono select-none overflow-x-auto no-scrollbar">
-      <div className="flex items-center gap-1.5 pr-2 border-r border-slate-800 text-slate-300 shrink-0">
-        <Zap className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-white/95 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200 dark:border-slate-800 shadow-2xl text-xs font-mono select-none overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden max-w-[calc(100vw-32px)] sm:max-w-none">
+      <div className="flex items-center gap-1.5 pr-2 border-r border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 shrink-0">
+        <Zap className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400 animate-pulse" />
         <span className="font-bold text-[11px] tracking-tight">Chaos Studio</span>
         <button
           onClick={() => setIsExpanded(false)}
-          className="ml-1 p-0.5 rounded text-slate-500 hover:text-slate-300 hover:bg-slate-800"
+          className="ml-1 p-0.5 rounded text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
           title="Minimize Chaos Studio"
         >
           <ChevronLeft className="w-3 h-3" />
@@ -80,14 +80,14 @@ export const ChaosStudio: React.FC<ChaosStudioProps> = ({
       {/* 10x Traffic Spike */}
       <button
         onClick={onTriggerSpike}
-        className={`px-2.5 py-1 rounded-xl flex items-center gap-1.5 text-[11px] font-semibold transition ${
+        className={`px-2.5 py-1 rounded-xl flex items-center gap-1.5 text-[11px] font-semibold transition shrink-0 ${
           chaosState.isSpikeActive
             ? 'bg-rose-600 text-white shadow-lg shadow-rose-600/30 animate-pulse'
-            : 'bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white'
+            : 'bg-slate-100 dark:bg-slate-800/80 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
         }`}
         title="Spike incoming traffic by 3x to simulate viral avalanche load"
       >
-        <Flame className="w-3.5 h-3.5 text-rose-400" />
+        <Flame className="w-3.5 h-3.5 text-rose-500 dark:text-rose-400" />
         <span>{chaosState.isSpikeActive ? 'Spike (Active)' : '3x Spike'}</span>
       </button>
 
@@ -95,14 +95,14 @@ export const ChaosStudio: React.FC<ChaosStudioProps> = ({
       <button
         onClick={onKillRandomNode}
         disabled={!hasNodes}
-        className={`px-2.5 py-1 rounded-xl flex items-center gap-1.5 text-[11px] font-semibold transition disabled:opacity-40 ${
+        className={`px-2.5 py-1 rounded-xl flex items-center gap-1.5 text-[11px] font-semibold transition disabled:opacity-40 shrink-0 ${
           chaosState.deadNodeIds.length > 0
-            ? 'bg-rose-950/80 border border-rose-600 text-rose-300'
-            : 'bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white'
+            ? 'bg-rose-100 dark:bg-rose-950/80 border border-rose-500 dark:border-rose-600 text-rose-800 dark:text-rose-300'
+            : 'bg-slate-100 dark:bg-slate-800/80 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
         }`}
         title="Simulate sudden hardware fault by killing a random node"
       >
-        <Skull className="w-3.5 h-3.5 text-rose-400" />
+        <Skull className="w-3.5 h-3.5 text-rose-500 dark:text-rose-400" />
         <span>
           Kill Node
           {chaosState.deadNodeIds.length > 0 && (
@@ -117,14 +117,14 @@ export const ChaosStudio: React.FC<ChaosStudioProps> = ({
       <button
         onClick={onSeverRandomEdge}
         disabled={!hasEdges}
-        className={`px-2.5 py-1 rounded-xl flex items-center gap-1.5 text-[11px] font-semibold transition disabled:opacity-40 ${
+        className={`px-2.5 py-1 rounded-xl flex items-center gap-1.5 text-[11px] font-semibold transition disabled:opacity-40 shrink-0 ${
           chaosState.severedEdgeIds.length > 0
-            ? 'bg-amber-950/80 border border-amber-600 text-amber-300'
-            : 'bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white'
+            ? 'bg-amber-100 dark:bg-amber-950/80 border border-amber-500 dark:border-amber-600 text-amber-800 dark:text-amber-300'
+            : 'bg-slate-100 dark:bg-slate-800/80 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
         }`}
         title="Simulate network wire cut / cross-rack switch failure"
       >
-        <Split className="w-3.5 h-3.5 text-amber-400" />
+        <Split className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
         <span>
           Sever Link
           {chaosState.severedEdgeIds.length > 0 && (
@@ -138,14 +138,14 @@ export const ChaosStudio: React.FC<ChaosStudioProps> = ({
       {/* Jitter +250ms */}
       <button
         onClick={onToggleJitter}
-        className={`px-2.5 py-1 rounded-xl flex items-center gap-1.5 text-[11px] font-semibold transition ${
+        className={`px-2.5 py-1 rounded-xl flex items-center gap-1.5 text-[11px] font-semibold transition shrink-0 ${
           chaosState.jitterMs > 0
-            ? 'bg-indigo-950/80 border border-indigo-500 text-indigo-300'
-            : 'bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white'
+            ? 'bg-indigo-100 dark:bg-indigo-950/80 border border-indigo-400 dark:border-indigo-500 text-indigo-800 dark:text-indigo-300'
+            : 'bg-slate-100 dark:bg-slate-800/80 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
         }`}
         title="Inject +250ms WAN network latency jitter across downstream calls"
       >
-        <Timer className="w-3.5 h-3.5 text-indigo-400" />
+        <Timer className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400" />
         <span>{chaosState.jitterMs > 0 ? '+250ms Active' : '+250ms Jitter'}</span>
       </button>
 
@@ -153,7 +153,7 @@ export const ChaosStudio: React.FC<ChaosStudioProps> = ({
       {isAnyChaosActive && (
         <button
           onClick={onHealAll}
-          className="ml-1 px-2.5 py-1 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white flex items-center gap-1 text-[11px] font-semibold shadow-md shadow-emerald-600/30 transition animate-bounce"
+          className="ml-1 px-2.5 py-1 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white flex items-center gap-1 text-[11px] font-semibold shadow-md shadow-emerald-600/30 transition animate-bounce shrink-0"
           title="Restore all nodes, edges, and normal traffic parameters"
         >
           <RotateCcw className="w-3 h-3" />

@@ -69,6 +69,7 @@ import { SavedTopologyDesign } from '../types/storage';
 
 import { getApiBaseUrl } from '../config/network';
 import { serializeTopology, deserializeTopology } from '../core/algorithms/topologySerializer';
+import { useThemeStore } from '../stores/useThemeStore';
 
 const nodeTypes = {
   systemNode: SystemCustomNode,
@@ -107,6 +108,7 @@ export const PlaygroundPage: React.FC = () => {
     return null;
   }, [searchParams]);
 
+  const { theme } = useThemeStore();
   const [sharedBannerVisible, setSharedBannerVisible] = useState(Boolean(sharedSnapshot));
   const [activeRoomId, setActiveRoomId] = useState<string | null>(roomIdFromUrl);
   const [inviteToken, setInviteToken] = useState<string>(inviteTokenFromUrl);
@@ -1170,17 +1172,17 @@ export const PlaygroundPage: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100dvh-128px)] md:h-[calc(100dvh-64px)] w-full overflow-hidden bg-slate-950 text-slate-100">
+    <div className="flex flex-col h-[calc(100dvh-128px)] md:h-[calc(100dvh-64px)] w-full overflow-hidden bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
       {/* Top Controls Toolbar with Clean Responsive Alignment */}
-      <div className="h-14 px-2 sm:px-3.5 bg-slate-900 border-b border-slate-800 flex items-center justify-between gap-1.5 sm:gap-2.5 shrink-0 shadow-sm z-10 select-none overflow-x-auto overflow-y-hidden [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+      <div className="h-14 px-2 sm:px-3.5 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-1.5 sm:gap-2.5 shrink-0 shadow-sm z-10 select-none overflow-x-auto overflow-y-hidden [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
         {/* Left Segment: Catalog Toggle, Brand, Template */}
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           <button
             onClick={() => setIsLeftPaletteOpen(!isLeftPaletteOpen)}
             className={`h-8.5 px-2.5 rounded-xl border flex items-center space-x-1.5 text-xs font-semibold transition shrink-0 ${
               isLeftPaletteOpen
-                ? 'bg-cyan-950/80 border-cyan-800/80 text-cyan-300'
-                : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-white'
+                ? 'bg-cyan-50 dark:bg-cyan-950/80 border-cyan-300 dark:border-cyan-800/80 text-cyan-700 dark:text-cyan-300'
+                : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
             }`}
             title="Toggle Component Catalog Palette"
           >
@@ -1193,26 +1195,26 @@ export const PlaygroundPage: React.FC = () => {
               <Layers className="w-4 h-4" />
             </div>
             <div>
-              <span className="font-extrabold text-xs text-white tracking-tight flex items-center gap-1">
+              <span className="font-extrabold text-xs text-slate-900 dark:text-white tracking-tight flex items-center gap-1">
                 Playground
                 {isCollab && (
-                  <span className="text-[9px] px-1 py-0.2 rounded font-bold uppercase tracking-wider bg-cyan-950 text-cyan-300 border border-cyan-800">
+                  <span className="text-[9px] px-1 py-0.2 rounded font-bold uppercase tracking-wider bg-cyan-100 dark:bg-cyan-950 text-cyan-800 dark:text-cyan-300 border border-cyan-300 dark:border-cyan-800">
                     Live
                   </span>
                 )}
               </span>
-              <span className="text-[10px] text-slate-400 font-mono hidden 2xl:block">
+              <span className="text-[10px] text-slate-500 dark:text-slate-400 font-mono hidden 2xl:block">
                 {currentNodes.length} Nodes • {currentEdges.length} Edges
               </span>
             </div>
           </div>
 
-          {/* Template Dropdown */}
-          <div className="hidden lg:flex items-center space-x-1 pl-2 border-l border-slate-800 shrink-0">
+          {/* Template Dropdown - Hidden on narrower screens to prevent crowding */}
+          <div className="hidden xl:flex items-center space-x-1 pl-2 border-l border-slate-200 dark:border-slate-800 shrink-0">
             <select
               value={selectedTemplateId}
               onChange={(e) => handleLoadTemplate(e.target.value)}
-              className="h-8 bg-slate-950 border border-slate-800 text-slate-200 text-xs rounded-lg px-2 font-medium focus:outline-none focus:border-cyan-500 cursor-pointer max-w-[130px] sm:max-w-[150px] truncate"
+              className="h-8 bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 text-xs rounded-lg px-2 font-medium focus:outline-none focus:border-cyan-500 cursor-pointer max-w-[130px] sm:max-w-[150px] truncate"
               title="Select Architecture Template"
             >
               {Object.values(PLAYGROUND_TEMPLATES).map((tpl) => (
@@ -1229,17 +1231,17 @@ export const PlaygroundPage: React.FC = () => {
           {/* Cycle Detection Alert */}
           {activeDagResult?.hasCycle && (
             <div
-              className="flex items-center space-x-1 px-2 h-8.5 rounded-lg bg-amber-950/70 border border-amber-700 text-amber-300 text-xs font-mono font-bold animate-pulse shrink-0"
+              className="flex items-center space-x-1 px-2 h-8.5 rounded-lg bg-amber-500/10 dark:bg-amber-950/70 border border-amber-500/30 dark:border-amber-700 text-amber-600 dark:text-amber-300 text-xs font-mono font-bold animate-pulse shrink-0"
               title={`Cycle detected: ${activeDagResult.cycleNodeIds?.join(' ➔ ')}`}
             >
-              <ShieldAlert className="w-3.5 h-3.5 text-amber-400" />
+              <ShieldAlert className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
               <span className="hidden 2xl:inline">Cycle Alert</span>
             </div>
           )}
 
-          {/* Target Load RPS Input */}
-          <div className="flex items-center gap-1 bg-slate-950 h-8.5 px-2 rounded-xl border border-slate-800 shrink-0">
-            <span className="text-[10px] font-mono font-bold text-slate-500 uppercase hidden sm:inline">Load:</span>
+          {/* Target Load RPS Input - Collapses gracefully on mobile */}
+          <div className="hidden sm:flex items-center gap-1 bg-slate-100 dark:bg-slate-950 h-8.5 px-2 rounded-xl border border-slate-200 dark:border-slate-800 shrink-0">
+            <span className="text-[10px] font-mono font-bold text-slate-500 uppercase">Load:</span>
             <input
               type="number"
               min="1000"
@@ -1247,7 +1249,7 @@ export const PlaygroundPage: React.FC = () => {
               step="5000"
               value={targetRps}
               onChange={(e) => setTargetRps(Number(e.target.value))}
-              className="w-14 sm:w-16 text-xs font-mono font-bold bg-transparent focus:outline-none text-cyan-400"
+              className="w-14 sm:w-16 text-xs font-mono font-bold bg-transparent focus:outline-none text-cyan-600 dark:text-cyan-400"
             />
             <span className="text-[10px] font-mono text-slate-500">RPS</span>
           </div>
@@ -1264,13 +1266,13 @@ export const PlaygroundPage: React.FC = () => {
           {/* Challenges Arena Button */}
           <button
             onClick={() => setIsChallengesOpen(true)}
-            className="h-8.5 px-2 sm:px-2.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 font-bold text-xs flex items-center space-x-1 transition shrink-0"
+            className="h-8.5 px-2 sm:px-2.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-600 dark:text-amber-300 font-bold text-xs flex items-center space-x-1 transition shrink-0"
             title="Open Interactive Architecture Challenges"
           >
-            <Trophy className="w-3.5 h-3.5 text-amber-400" />
+            <Trophy className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
             <span className="hidden 2xl:inline">Challenges</span>
             {activeChallenge && (
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse ml-0.5" />
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse ml-0.5" />
             )}
           </button>
         </div>
@@ -1278,26 +1280,26 @@ export const PlaygroundPage: React.FC = () => {
         {/* Right Segment: Storage Tools, Inspector Toggle, Collab */}
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           {/* Storage Actions Group - Compact Icon Bar */}
-          <div className="flex items-center bg-slate-950 p-0.5 rounded-lg border border-slate-800 shrink-0">
+          <div className="flex items-center bg-slate-100 dark:bg-slate-950 p-0.5 rounded-lg border border-slate-200 dark:border-slate-800 shrink-0">
             <button
               onClick={handleSaveDesignToDexie}
-              className="h-7 w-7 flex items-center justify-center rounded-md text-slate-300 hover:text-white hover:bg-slate-800 transition"
+              className="h-7 w-7 flex items-center justify-center rounded-md text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800 transition"
               title="Save Design locally to IndexedDB"
             >
-              <Save className="w-3.5 h-3.5 text-cyan-400" />
+              <Save className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
             </button>
 
             <button
               onClick={() => setSavedDesignsModalOpen(true)}
-              className="h-7 w-7 flex items-center justify-center rounded-md text-slate-300 hover:text-white hover:bg-slate-800 transition"
+              className="h-7 w-7 flex items-center justify-center rounded-md text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800 transition"
               title="Browse Saved Designs"
             >
-              <FolderOpen className="w-3.5 h-3.5 text-amber-400" />
+              <FolderOpen className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
             </button>
 
             <button
               onClick={handleExportJson}
-              className="h-7 w-7 flex items-center justify-center rounded-md text-xs text-slate-300 hover:text-white hover:bg-slate-800 transition"
+              className="h-7 w-7 flex items-center justify-center rounded-md text-xs text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800 transition"
               title="Export Architecture JSON"
             >
               <Download className="w-3.5 h-3.5" />
@@ -1305,7 +1307,7 @@ export const PlaygroundPage: React.FC = () => {
 
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="h-7 w-7 flex items-center justify-center rounded-md text-xs text-slate-300 hover:text-white hover:bg-slate-800 transition"
+              className="h-7 w-7 flex items-center justify-center rounded-md text-xs text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800 transition"
               title="Import Architecture JSON"
             >
               <Upload className="w-3.5 h-3.5" />
@@ -1313,7 +1315,7 @@ export const PlaygroundPage: React.FC = () => {
 
             <button
               onClick={handleClearCanvas}
-              className="h-7 w-7 flex items-center justify-center rounded-md text-xs text-slate-400 hover:text-rose-400 hover:bg-rose-950/60 transition"
+              className="h-7 w-7 flex items-center justify-center rounded-md text-xs text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-950/60 transition"
               title="Clear Canvas"
             >
               <Trash2 className="w-3.5 h-3.5" />
@@ -1325,8 +1327,8 @@ export const PlaygroundPage: React.FC = () => {
             onClick={() => setIsRightSidebarOpen(!isRightSidebarOpen)}
             className={`h-8.5 px-2 sm:px-2.5 rounded-lg border flex items-center space-x-1.5 text-xs font-semibold transition shrink-0 ${
               isRightSidebarOpen
-                ? 'bg-cyan-950/80 border-cyan-800/80 text-cyan-300'
-                : 'bg-slate-800 border-slate-700 text-slate-300 hover:text-white'
+                ? 'bg-cyan-50 dark:bg-cyan-950/80 border-cyan-300 dark:border-cyan-800/80 text-cyan-700 dark:text-cyan-300'
+                : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
             }`}
             title="Toggle Right Inspector Sidebar"
           >
@@ -1360,7 +1362,7 @@ export const PlaygroundPage: React.FC = () => {
                     setUserName(newName.trim());
                   }
                 }}
-                className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700 text-xs text-slate-300 transition"
+                className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-800/80 hover:bg-slate-200 dark:hover:bg-slate-700/80 border border-slate-200 dark:border-slate-700 text-xs text-slate-700 dark:text-slate-300 transition"
                 title="Change display name"
               >
                 <div
@@ -1460,13 +1462,13 @@ export const PlaygroundPage: React.FC = () => {
             minZoom={0.3}
             maxZoom={2}
             defaultViewport={{ x: 60, y: 80, zoom: 0.85 }}
-            className="bg-slate-950"
+            className="bg-slate-100 dark:bg-slate-950"
           >
-            <Background gap={16} size={1} color="#334155" className="opacity-30" />
-            <Controls className="bg-slate-900 border border-slate-800 shadow-md !rounded-xl overflow-hidden !text-slate-200" />
+            <Background gap={16} size={1} color={theme === 'dark' ? '#334155' : '#cbd5e1'} className="opacity-40" />
+            <Controls className="!bg-white dark:!bg-slate-900 !border !border-slate-200 dark:!border-slate-800 !shadow-md !rounded-xl overflow-hidden !text-slate-700 dark:!text-slate-200" />
             <MiniMap
               nodeStrokeWidth={3}
-              className="!bg-slate-900/90 !border !border-slate-800 !rounded-xl !shadow-md"
+              className="!bg-white/90 dark:!bg-slate-900/90 !border !border-slate-200 dark:!border-slate-800 !rounded-xl !shadow-md"
             />
           </ReactFlow>
 
