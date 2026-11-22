@@ -14,9 +14,9 @@ export function getApiBaseUrl(): string {
   const isDevPort = window.location.port === '3000' || window.location.port === '5173' || window.location.port === '3001';
   if (isDevPort) return 'http://localhost:4000';
 
-  // Production Vercel deployment routes to deployed Render backend
+  // If deployed standalone on Vercel without external backend, run client-side
   if (window.location.hostname.endsWith('vercel.app')) {
-    return 'https://bluprnt-ws.onrender.com';
+    return '';
   }
 
   // Same-origin fallback (when hosted unified on Render, Railway, or Docker)
@@ -34,9 +34,9 @@ export function getCollabWsUrl(): string {
   const isDevPort = window.location.port === '3000' || window.location.port === '5173' || window.location.port === '3001';
   if (isDevPort) return 'ws://localhost:4000/collab';
 
-  // Production Vercel deployment connects to deployed Render WebSocket Gateway
+  // Production Vercel deployment: if no external WS is configured, run in Studio mode
   if (window.location.hostname.endsWith('vercel.app')) {
-    return 'wss://bluprnt-ws.onrender.com/collab';
+    return '';
   }
 
   // Same-origin fallback

@@ -38,7 +38,7 @@ export const ShareRoomModal: React.FC<ShareRoomModalProps> = ({
   const isOwner = userRole === 'owner';
   const isVercel = typeof window !== 'undefined' && window.location.hostname.endsWith('vercel.app');
   const hasExternalWs = !!(import.meta as any).env?.VITE_COLLAB_WS_URL;
-  const isOfflineMode = roomId.endsWith('-local') || (isVercel && !hasExternalWs);
+  const isOfflineMode = roomId.endsWith('-local') || roomId.endsWith('-studio') || (isVercel && !hasExternalWs);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
@@ -46,10 +46,10 @@ export const ShareRoomModal: React.FC<ShareRoomModalProps> = ({
         <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
           <div>
             <h3 className="text-lg font-black text-slate-900 dark:text-slate-100">
-              Share Collaborative Playground
+              Share System Architecture
             </h3>
             <p className="text-xs text-slate-500">
-              Invite team members to design, simulate, and comment in real-time.
+              Share and export your system design topology.
             </p>
           </div>
           <button
@@ -60,14 +60,14 @@ export const ShareRoomModal: React.FC<ShareRoomModalProps> = ({
           </button>
         </div>
 
-        {/* Offline / Vercel WebSockets Advisory */}
+        {/* Studio Room Advisory */}
         {isOfflineMode && (
-          <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-2xl text-[11px] text-amber-700 dark:text-amber-300 space-y-1">
+          <div className="p-3 bg-cyan-500/10 border border-cyan-500/30 rounded-2xl text-[11px] text-cyan-800 dark:text-cyan-300 space-y-1">
             <span className="font-bold flex items-center gap-1.5">
-              <span>ℹ️</span> Standalone Local Room
+              <span>💡</span> Studio Room
             </span>
             <p className="opacity-90 leading-relaxed">
-              Your canvas edits are preserved locally in IndexedDB. Live multi-user WebSockets are not supported by Vercel serverless. To enable cross-device multiplayer, deploy our 1-click Docker container to <strong>Render</strong> / <strong>Railway</strong>, or set <code className="bg-amber-500/20 px-1 py-0.5 rounded text-[10px]">VITE_COLLAB_WS_URL</code> in Vercel.
+              Your canvas and designs are auto-saved in your browser's IndexedDB. To share complete architectures across devices, you can also use the <strong>Download (Export JSON)</strong> and <strong>Upload (Import JSON)</strong> tools on the top navigation bar.
             </p>
           </div>
         )}

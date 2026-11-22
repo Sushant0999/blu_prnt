@@ -271,7 +271,7 @@ export const PlaygroundPage: React.FC = () => {
 
   // Fetch room metadata & member roles from server if in collab mode
   const refreshRoomMeta = useCallback(async () => {
-    if (!activeRoomId || activeRoomId.endsWith('-local') || activeRoomId.startsWith('local-')) return;
+    if (!activeRoomId || !API_BASE || activeRoomId.endsWith('-local') || activeRoomId.endsWith('-studio') || activeRoomId.startsWith('local-')) return;
     try {
       const res = await fetch(`${API_BASE}/api/collab/room/${activeRoomId}/info?email=${encodeURIComponent(userEmail)}`);
       if (res.ok) {
@@ -992,6 +992,16 @@ export const PlaygroundPage: React.FC = () => {
 
   // Start live collaboration room
   const handleStartCollab = async () => {
+    if (!API_BASE) {
+      const studioRoomId = `room-${Date.now().toString(36)}-studio`;
+      const studioToken = Math.random().toString(36).slice(2, 10);
+      setActiveRoomId(studioRoomId);
+      setInviteToken(studioToken);
+      setSearchParams({ room: studioRoomId, token: studioToken });
+      setShareModalOpen(true);
+      return;
+    }
+
     try {
       const res = await fetch(`${API_BASE}/api/collab/create-room`, {
         method: 'POST',
@@ -1009,7 +1019,7 @@ export const PlaygroundPage: React.FC = () => {
       const err = await res.json();
       alert(err.error || 'Failed to create room on server');
     } catch (e: any) {
-      const offlineRoomId = `room-${Date.now().toString(36)}-local`;
+      const offlineRoomId = `room-${Date.now().toString(36)}-studio`;
       const offlineToken = Math.random().toString(36).slice(2, 10);
       setActiveRoomId(offlineRoomId);
       setInviteToken(offlineToken);

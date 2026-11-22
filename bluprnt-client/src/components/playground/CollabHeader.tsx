@@ -47,8 +47,9 @@ export const CollabHeader: React.FC<CollabHeaderProps> = ({
             ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800'
             : status === 'connecting'
             ? 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-800 animate-pulse'
-            : 'bg-slate-100 dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700'
+            : 'bg-cyan-950/60 text-cyan-300 border-cyan-800/80 shadow-sm'
         }`}
+        title={status === 'connected' ? 'Connected to live room' : 'Studio Mode: Canvas auto-saved locally in browser IndexedDB'}
       >
         <span
           className={`w-1.5 h-1.5 rounded-full ${
@@ -56,10 +57,10 @@ export const CollabHeader: React.FC<CollabHeaderProps> = ({
               ? 'bg-emerald-500 animate-ping'
               : status === 'connecting'
               ? 'bg-amber-500'
-              : 'bg-slate-400'
+              : 'bg-cyan-400'
           }`}
         />
-        <span>{status}</span>
+        <span>{status === 'offline' ? 'STUDIO' : status}</span>
       </div>
 
       {/* Role Badge */}

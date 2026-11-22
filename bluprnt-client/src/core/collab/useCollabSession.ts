@@ -98,7 +98,7 @@ export function useCollabSession(roomId: string | null, userEmail: string, initi
     persistenceRef.current = indexeddbProvider;
 
     // Check if room is offline-local or if a valid WebSocket URL is available
-    const isLocalRoom = roomId.endsWith('-local') || roomId.startsWith('local-');
+    const isLocalRoom = roomId.endsWith('-local') || roomId.endsWith('-studio') || roomId.startsWith('local-');
     const wsUrl = getCollabWsUrl();
     const shouldConnectWs = !isLocalRoom && Boolean(wsUrl);
 
