@@ -69,12 +69,17 @@ self.addEventListener('fetch', (event) => {
           return networkResponse;
         })
         .catch(async () => {
-          const cached = await caches.match('/index.html');
+          const cached = (await caches.match('/index.html')) || (await caches.match('/'));
           if (cached) return cached;
-          return new Response('You are offline. Reconnect to access BluPrnt.', {
-            status: 503,
-            headers: { 'Content-Type': 'text/plain' },
-          });
+          try {
+            const fresh = await fetch('/index.html');
+            return fresh;
+          } catch (e) {
+            return new Response('You are offline. Reconnect to access BluPrnt.', {
+              status: 503,
+              headers: { 'Content-Type': 'text/plain' },
+            });
+          }
         })
     );
     return;
