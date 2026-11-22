@@ -1,5 +1,5 @@
 // BluPrnt Offline Service Worker
-const CACHE_NAME = 'bluprnt-offline-v1';
+const CACHE_NAME = 'bluprnt-offline-v3';
 
 const STATIC_ASSETS = [
   '/',
@@ -40,21 +40,54 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Cache-first for content & assets, Network-first for dynamic API
+// Network-first for HTML navigations to always load the latest deploy;
+// Cache-first for static content & hashed assets; Ignore APIs and WebSockets
 self.addEventListener('fetch', (event) => {
-  const url = new URL(event.request.url);
+  const req = event.request;
+  if (req.method !== 'GET') return;
 
-  // Ignore backend API calls from cache
-  if (url.pathname.startsWith('/api/')) {
+  const url = new URL(req.url);
+
+  // Ignore backend API, WebSocket, and chrome-extension calls
+  if (
+    url.pathname.startsWith('/api/') ||
+    url.pathname.startsWith('/collab') ||
+    !url.protocol.startsWith('http')
+  ) {
     return;
   }
 
+  // 1. Navigation requests (HTML pages): Network-first with cache fallback
+  if (req.mode === 'navigate') {
+    event.respondWith(
+      fetch(req)
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const clone = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(req, clone));
+          }
+          return networkResponse;
+        })
+        .catch(async () => {
+          const cached = await caches.match('/index.html');
+          if (cached) return cached;
+          return new Response('You are offline. Reconnect to access BluPrnt.', {
+            status: 503,
+            headers: { 'Content-Type': 'text/plain' },
+          });
+        })
+    );
+    return;
+  }
+
+  // 2. Static assets & content: Cache-first with network fallback
   event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
+    caches.match(req).then((cachedResponse) => {
       if (cachedResponse) {
         return cachedResponse;
       }
-      return fetch(event.request)
+
+      return fetch(req)
         .then((networkResponse) => {
           if (
             networkResponse &&
@@ -62,15 +95,14 @@ self.addEventListener('fetch', (event) => {
             (url.pathname.startsWith('/content/') || url.pathname.startsWith('/assets/'))
           ) {
             const clone = networkResponse.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+            caches.open(CACHE_NAME).then((cache) => cache.put(req, clone));
           }
           return networkResponse;
         })
-        .catch(() => {
-          // If offline and request is page navigation, return index.html
-          if (event.request.mode === 'navigate') {
-            return caches.match('/index.html');
-          }
+        .catch(async () => {
+          const fallback = await caches.match(req);
+          if (fallback) return fallback;
+          return new Response('', { status: 408 });
         });
     })
   );
