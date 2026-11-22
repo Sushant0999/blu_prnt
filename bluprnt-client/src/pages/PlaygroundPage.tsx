@@ -1179,7 +1179,7 @@ export const PlaygroundPage: React.FC = () => {
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           <button
             onClick={() => setIsLeftPaletteOpen(!isLeftPaletteOpen)}
-            className={`h-8.5 px-2.5 rounded-xl border flex items-center space-x-1.5 text-xs font-semibold transition shrink-0 ${
+            className={`h-8.5 w-8.5 flex items-center justify-center rounded-xl border text-xs font-semibold transition shrink-0 ${
               isLeftPaletteOpen
                 ? 'bg-cyan-50 dark:bg-cyan-950/80 border-cyan-300 dark:border-cyan-800/80 text-cyan-700 dark:text-cyan-300'
                 : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
@@ -1187,7 +1187,6 @@ export const PlaygroundPage: React.FC = () => {
             title="Toggle Component Catalog Palette"
           >
             <PanelLeft className="w-4 h-4" />
-            <span className="hidden 2xl:inline">Catalog</span>
           </button>
 
           <div className="flex items-center space-x-2 shrink-0">
@@ -1203,9 +1202,6 @@ export const PlaygroundPage: React.FC = () => {
                   </span>
                 )}
               </span>
-              <span className="text-[10px] text-slate-500 dark:text-slate-400 font-mono hidden 2xl:block">
-                {currentNodes.length} Nodes • {currentEdges.length} Edges
-              </span>
             </div>
           </div>
 
@@ -1214,7 +1210,7 @@ export const PlaygroundPage: React.FC = () => {
             <select
               value={selectedTemplateId}
               onChange={(e) => handleLoadTemplate(e.target.value)}
-              className="h-8 bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 text-xs rounded-lg px-2 font-medium focus:outline-none focus:border-cyan-500 cursor-pointer max-w-[130px] sm:max-w-[150px] truncate"
+              className="h-8 bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 text-xs rounded-lg px-2 font-medium focus:outline-none focus:border-cyan-500 cursor-pointer max-w-[120px] sm:max-w-[140px] truncate"
               title="Select Architecture Template"
             >
               {Object.values(PLAYGROUND_TEMPLATES).map((tpl) => (
@@ -1263,16 +1259,15 @@ export const PlaygroundPage: React.FC = () => {
             <span className="hidden sm:inline">{isCollab ? 'Simulate' : 'Run Simulation'}</span>
           </button>
 
-          {/* Challenges Arena Button */}
+          {/* Challenges Arena Button - Icon only with indicator */}
           <button
             onClick={() => setIsChallengesOpen(true)}
-            className="h-8.5 px-2 sm:px-2.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-600 dark:text-amber-300 font-bold text-xs flex items-center space-x-1 transition shrink-0"
+            className="h-8.5 w-8.5 flex items-center justify-center rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-600 dark:text-amber-300 font-bold text-xs transition shrink-0 relative"
             title="Open Interactive Architecture Challenges"
           >
             <Trophy className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
-            <span className="hidden 2xl:inline">Challenges</span>
             {activeChallenge && (
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse ml-0.5" />
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse absolute top-1 right-1" />
             )}
           </button>
         </div>
@@ -1322,10 +1317,10 @@ export const PlaygroundPage: React.FC = () => {
             </button>
           </div>
 
-          {/* Toggle Right Inspector Sidebar Button */}
+          {/* Toggle Right Inspector Sidebar Button - Clean Icon Button */}
           <button
             onClick={() => setIsRightSidebarOpen(!isRightSidebarOpen)}
-            className={`h-8.5 px-2 sm:px-2.5 rounded-lg border flex items-center space-x-1.5 text-xs font-semibold transition shrink-0 ${
+            className={`h-8.5 w-8.5 flex items-center justify-center rounded-lg border text-xs font-semibold transition shrink-0 ${
               isRightSidebarOpen
                 ? 'bg-cyan-50 dark:bg-cyan-950/80 border-cyan-300 dark:border-cyan-800/80 text-cyan-700 dark:text-cyan-300'
                 : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
@@ -1333,7 +1328,6 @@ export const PlaygroundPage: React.FC = () => {
             title="Toggle Right Inspector Sidebar"
           >
             <PanelRight className="w-4 h-4" />
-            <span className="hidden 2xl:inline">Inspector</span>
           </button>
 
           {/* Live Collab / Header */}
