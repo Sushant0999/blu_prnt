@@ -1172,12 +1172,12 @@ export const PlaygroundPage: React.FC = () => {
   return (
     <div className="flex flex-col h-[calc(100dvh-128px)] md:h-[calc(100dvh-64px)] w-full overflow-hidden bg-slate-950 text-slate-100">
       {/* Top Controls Toolbar with Clean Responsive Alignment */}
-      <div className="h-14 px-2.5 sm:px-4 bg-slate-900 border-b border-slate-800 flex items-center justify-between gap-2 sm:gap-3 shrink-0 shadow-sm z-10 select-none overflow-x-auto overflow-y-hidden scrollbar-none">
-        {/* Left Segment: Catalog Toggle, Brand, Counter, Template */}
-        <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+      <div className="h-14 px-2 sm:px-3.5 bg-slate-900 border-b border-slate-800 flex items-center justify-between gap-1.5 sm:gap-2.5 shrink-0 shadow-sm z-10 select-none overflow-x-auto overflow-y-hidden [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+        {/* Left Segment: Catalog Toggle, Brand, Template */}
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           <button
             onClick={() => setIsLeftPaletteOpen(!isLeftPaletteOpen)}
-            className={`h-9 px-2.5 rounded-xl border flex items-center space-x-1.5 text-xs font-semibold transition shrink-0 ${
+            className={`h-8.5 px-2.5 rounded-xl border flex items-center space-x-1.5 text-xs font-semibold transition shrink-0 ${
               isLeftPaletteOpen
                 ? 'bg-cyan-950/80 border-cyan-800/80 text-cyan-300'
                 : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-white'
@@ -1185,35 +1185,35 @@ export const PlaygroundPage: React.FC = () => {
             title="Toggle Component Catalog Palette"
           >
             <PanelLeft className="w-4 h-4" />
-            <span className="hidden xl:inline">Catalog</span>
+            <span className="hidden 2xl:inline">Catalog</span>
           </button>
 
           <div className="flex items-center space-x-2 shrink-0">
-            <div className="w-8 h-8 rounded-lg bg-cyan-600 text-white flex items-center justify-center font-bold shadow-md shadow-cyan-600/20 shrink-0">
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-cyan-600 text-white flex items-center justify-center font-bold shadow-md shadow-cyan-600/20 shrink-0">
               <Layers className="w-4 h-4" />
             </div>
             <div>
-              <span className="font-extrabold text-xs text-white tracking-tight flex items-center gap-1.5">
+              <span className="font-extrabold text-xs text-white tracking-tight flex items-center gap-1">
                 Playground
                 {isCollab && (
-                  <span className="text-[10px] px-1.5 py-0.2 rounded font-bold uppercase tracking-wider bg-cyan-950 text-cyan-300 border border-cyan-800">
+                  <span className="text-[9px] px-1 py-0.2 rounded font-bold uppercase tracking-wider bg-cyan-950 text-cyan-300 border border-cyan-800">
                     Live
                   </span>
                 )}
               </span>
-              <span className="text-[10px] text-slate-400 font-mono hidden xl:block">
+              <span className="text-[10px] text-slate-400 font-mono hidden 2xl:block">
                 {currentNodes.length} Nodes • {currentEdges.length} Edges
               </span>
             </div>
           </div>
 
           {/* Template Dropdown */}
-          <div className="hidden lg:flex items-center space-x-1.5 pl-2 border-l border-slate-800 shrink-0">
-            <span className="text-[10px] text-slate-500 uppercase font-mono font-bold hidden xl:inline">Template:</span>
+          <div className="hidden lg:flex items-center space-x-1 pl-2 border-l border-slate-800 shrink-0">
             <select
               value={selectedTemplateId}
               onChange={(e) => handleLoadTemplate(e.target.value)}
-              className="h-8.5 bg-slate-950 border border-slate-800 text-slate-200 text-xs rounded-lg px-2 font-medium focus:outline-none focus:border-cyan-500 cursor-pointer"
+              className="h-8 bg-slate-950 border border-slate-800 text-slate-200 text-xs rounded-lg px-2 font-medium focus:outline-none focus:border-cyan-500 cursor-pointer max-w-[130px] sm:max-w-[150px] truncate"
+              title="Select Architecture Template"
             >
               {Object.values(PLAYGROUND_TEMPLATES).map((tpl) => (
                 <option key={tpl.id} value={tpl.id}>
@@ -1229,11 +1229,11 @@ export const PlaygroundPage: React.FC = () => {
           {/* Cycle Detection Alert */}
           {activeDagResult?.hasCycle && (
             <div
-              className="flex items-center space-x-1 px-2.5 h-8.5 rounded-lg bg-amber-950/70 border border-amber-700 text-amber-300 text-xs font-mono font-bold animate-pulse shrink-0"
+              className="flex items-center space-x-1 px-2 h-8.5 rounded-lg bg-amber-950/70 border border-amber-700 text-amber-300 text-xs font-mono font-bold animate-pulse shrink-0"
               title={`Cycle detected: ${activeDagResult.cycleNodeIds?.join(' ➔ ')}`}
             >
               <ShieldAlert className="w-3.5 h-3.5 text-amber-400" />
-              <span className="hidden xl:inline">Cycle Alert</span>
+              <span className="hidden 2xl:inline">Cycle Alert</span>
             </div>
           )}
 
@@ -1247,7 +1247,7 @@ export const PlaygroundPage: React.FC = () => {
               step="5000"
               value={targetRps}
               onChange={(e) => setTargetRps(Number(e.target.value))}
-              className="w-14 sm:w-20 text-xs font-mono font-bold bg-transparent focus:outline-none text-cyan-400"
+              className="w-14 sm:w-16 text-xs font-mono font-bold bg-transparent focus:outline-none text-cyan-400"
             />
             <span className="text-[10px] font-mono text-slate-500">RPS</span>
           </div>
@@ -1255,7 +1255,7 @@ export const PlaygroundPage: React.FC = () => {
           {/* Run Simulation Button */}
           <button
             onClick={handleRunSimulation}
-            className="h-8.5 flex items-center gap-1.5 px-3 rounded-xl bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white font-bold text-xs shadow-md shadow-cyan-500/20 transition-all hover:scale-105 active:scale-95 shrink-0"
+            className="h-8.5 flex items-center gap-1.5 px-2.5 sm:px-3 rounded-xl bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white font-bold text-xs shadow-md shadow-cyan-500/20 transition-all hover:scale-105 active:scale-95 shrink-0"
           >
             <Play className="w-3.5 h-3.5 fill-current" />
             <span className="hidden sm:inline">{isCollab ? 'Simulate' : 'Run Simulation'}</span>
@@ -1264,11 +1264,11 @@ export const PlaygroundPage: React.FC = () => {
           {/* Challenges Arena Button */}
           <button
             onClick={() => setIsChallengesOpen(true)}
-            className="h-8.5 px-2.5 sm:px-3 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 font-bold text-xs flex items-center space-x-1.5 transition shrink-0"
+            className="h-8.5 px-2 sm:px-2.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 font-bold text-xs flex items-center space-x-1 transition shrink-0"
             title="Open Interactive Architecture Challenges"
           >
             <Trophy className="w-3.5 h-3.5 text-amber-400" />
-            <span className="hidden xl:inline">Challenges</span>
+            <span className="hidden 2xl:inline">Challenges</span>
             {activeChallenge && (
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse ml-0.5" />
             )}
@@ -1277,24 +1277,22 @@ export const PlaygroundPage: React.FC = () => {
 
         {/* Right Segment: Storage Tools, Inspector Toggle, Collab */}
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-          {/* Storage Actions Group */}
+          {/* Storage Actions Group - Compact Icon Bar */}
           <div className="flex items-center bg-slate-950 p-0.5 rounded-lg border border-slate-800 shrink-0">
             <button
               onClick={handleSaveDesignToDexie}
-              className="h-7 px-2 rounded-md text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 flex items-center space-x-1 transition"
+              className="h-7 w-7 flex items-center justify-center rounded-md text-slate-300 hover:text-white hover:bg-slate-800 transition"
               title="Save Design locally to IndexedDB"
             >
               <Save className="w-3.5 h-3.5 text-cyan-400" />
-              <span className="hidden 2xl:inline">Save</span>
             </button>
 
             <button
               onClick={() => setSavedDesignsModalOpen(true)}
-              className="h-7 px-2 rounded-md text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 flex items-center space-x-1 transition"
+              className="h-7 w-7 flex items-center justify-center rounded-md text-slate-300 hover:text-white hover:bg-slate-800 transition"
               title="Browse Saved Designs"
             >
               <FolderOpen className="w-3.5 h-3.5 text-amber-400" />
-              <span className="hidden 2xl:inline">Designs</span>
             </button>
 
             <button
@@ -1325,7 +1323,7 @@ export const PlaygroundPage: React.FC = () => {
           {/* Toggle Right Inspector Sidebar Button */}
           <button
             onClick={() => setIsRightSidebarOpen(!isRightSidebarOpen)}
-            className={`h-8.5 px-2.5 rounded-lg border flex items-center space-x-1.5 text-xs font-semibold transition shrink-0 ${
+            className={`h-8.5 px-2 sm:px-2.5 rounded-lg border flex items-center space-x-1.5 text-xs font-semibold transition shrink-0 ${
               isRightSidebarOpen
                 ? 'bg-cyan-950/80 border-cyan-800/80 text-cyan-300'
                 : 'bg-slate-800 border-slate-700 text-slate-300 hover:text-white'
@@ -1333,7 +1331,7 @@ export const PlaygroundPage: React.FC = () => {
             title="Toggle Right Inspector Sidebar"
           >
             <PanelRight className="w-4 h-4" />
-            <span className="hidden md:inline">Inspector</span>
+            <span className="hidden 2xl:inline">Inspector</span>
           </button>
 
           {/* Live Collab / Header */}
@@ -1371,11 +1369,11 @@ export const PlaygroundPage: React.FC = () => {
                 >
                   {userName.charAt(0).toUpperCase()}
                 </div>
-                <span className="max-w-[70px] truncate font-semibold text-[11px]">{userName}</span>
+                <span className="max-w-[60px] sm:max-w-[80px] truncate font-semibold text-[11px]">{userName}</span>
               </button>
               <button
                 onClick={handleStartCollab}
-                className="h-8.5 flex items-center gap-1.5 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-sm transition-all shrink-0"
+                className="h-8.5 flex items-center gap-1.5 px-2.5 sm:px-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-sm transition-all shrink-0"
               >
                 <Users className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Live Room</span>

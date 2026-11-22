@@ -97,7 +97,7 @@ export const CollabHeader: React.FC<CollabHeaderProps> = ({
 
       {/* Status Pill */}
       <div
-        className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider border shrink-0 ${
+        className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider border shrink-0 ${
           status === 'connected'
             ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800'
             : status === 'connecting'
@@ -115,12 +115,12 @@ export const CollabHeader: React.FC<CollabHeaderProps> = ({
               : 'bg-slate-400'
           }`}
         />
-        <span>{status}</span>
+        <span className="hidden xl:inline">{status}</span>
       </div>
 
       {/* Role Badge */}
       <span
-        className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md shrink-0 ${
+        className={`hidden 2xl:inline text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md shrink-0 ${
           role === 'owner'
             ? 'bg-brand-100 dark:bg-brand-950 text-brand-700 dark:text-brand-300'
             : role === 'editor'
@@ -133,7 +133,7 @@ export const CollabHeader: React.FC<CollabHeaderProps> = ({
 
       {/* Peer Avatars Stack */}
       <div className="flex items-center -space-x-1.5 overflow-hidden pl-1 shrink-0">
-        {peers.slice(0, 4).map((p) => (
+        {peers.slice(0, 3).map((p) => (
           <div
             key={p.clientId}
             title={`${p.user.name} (${p.user.role})`}
@@ -143,9 +143,9 @@ export const CollabHeader: React.FC<CollabHeaderProps> = ({
             {p.user.name.charAt(0).toUpperCase()}
           </div>
         ))}
-        {peers.length > 4 && (
+        {peers.length > 3 && (
           <div className="w-6 h-6 rounded-full bg-slate-200 dark:bg-slate-700 border-2 border-white dark:border-slate-900 flex items-center justify-center text-[9px] font-bold text-slate-600 dark:text-slate-300 shrink-0">
-            +{peers.length - 4}
+            +{peers.length - 3}
           </div>
         )}
       </div>
@@ -196,10 +196,10 @@ export const CollabHeader: React.FC<CollabHeaderProps> = ({
       {/* Share / Invite */}
       <button
         onClick={onOpenShare}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold shadow-sm transition-all shrink-0"
+        className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold shadow-sm transition-all shrink-0"
       >
         <Share2 className="w-3.5 h-3.5" />
-        Share
+        <span className="hidden sm:inline">Share</span>
       </button>
     </div>
   );
