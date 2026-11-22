@@ -47,6 +47,10 @@ export const AnimatedEdge: React.FC<EdgeProps<AnimatedEdgeData>> = ({
   // Animation duration scales with traffic (higher traffic = faster packet streams)
   const animDuration = traffic > 10000 ? '1.2s' : traffic > 2000 ? '2s' : '3.5s';
 
+  // Distance between handles to handle compact spacing
+  const edgeDist = Math.hypot(targetX - sourceX, targetY - sourceY);
+  const isShortEdge = edgeDist < 140;
+
   return (
     <>
       {/* Invisible wider hit path for easy clicking, selecting & hovering */}
@@ -103,16 +107,18 @@ export const AnimatedEdge: React.FC<EdgeProps<AnimatedEdgeData>> = ({
         <div
           style={{
             position: 'absolute',
-            transform: `translate(-50%, -100%) translate(${labelX}px,${labelY - 8}px)`,
+            transform: `translate(-50%, -100%) translate(${labelX}px,${labelY - (isShortEdge ? 14 : 10)}px)`,
             pointerEvents: 'all',
-            zIndex: 25,
+            zIndex: 30,
           }}
           className="nodrag nopan select-none group"
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
         >
           <div
-            className={`px-2 py-0.5 rounded-full text-[9px] font-mono font-bold border shadow-lg backdrop-blur-md flex items-center gap-1.5 whitespace-nowrap transition-all ${
+            className={`rounded-full font-mono font-bold border shadow-lg backdrop-blur-md flex items-center whitespace-nowrap transition-all ${
+              isShortEdge ? 'px-1.5 py-0.5 text-[8.5px] gap-1' : 'px-2 py-0.5 text-[9px] gap-1.5'
+            } ${
               selected
                 ? 'bg-cyan-950/95 text-cyan-200 border-cyan-400 ring-2 ring-cyan-500/50 shadow-cyan-950/60'
                 : status === 'dropped'
@@ -132,7 +138,7 @@ export const AnimatedEdge: React.FC<EdgeProps<AnimatedEdgeData>> = ({
               }`}
             />
             <span>{traffic >= 1000 ? `${(traffic / 1000).toFixed(1)}k` : traffic} RPS</span>
-            {latency > 0 && <span className="opacity-70 font-normal">• {latency}ms</span>}
+            {latency > 0 && <span className="opacity-70 font-normal">{isShortEdge ? '' : '•'} {latency}ms</span>}
 
             {/* Instant Disconnect Button on Badge Hover or Selection */}
             {data?.onDeleteEdge && (
@@ -141,7 +147,7 @@ export const AnimatedEdge: React.FC<EdgeProps<AnimatedEdgeData>> = ({
                   e.stopPropagation();
                   data.onDeleteEdge!();
                 }}
-                className={`ml-1 p-0.5 rounded-full text-slate-400 hover:text-white hover:bg-rose-600 transition flex items-center justify-center ${
+                className={`ml-0.5 p-0.5 rounded-full text-slate-400 hover:text-white hover:bg-rose-600 transition flex items-center justify-center ${
                   isHovered || selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
                 }`}
                 title="Disconnect edge (or press Backspace/Delete)"
