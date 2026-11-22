@@ -42,6 +42,8 @@ import {
   AlertTriangle,
   Clock,
   Skull,
+  Leaf,
+  Coffee,
 } from 'lucide-react';
 
 const ICON_MAP: Record<string, React.ElementType> = {
@@ -84,6 +86,8 @@ const ICON_MAP: Record<string, React.ElementType> = {
   Gauge,
   Lock,
   Skull,
+  Leaf,
+  Coffee,
 };
 import { MACHINE_TIERS, MachineTierId } from '../../core/types/machineTiers';
 

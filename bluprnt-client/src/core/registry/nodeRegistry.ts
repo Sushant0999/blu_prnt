@@ -92,7 +92,17 @@ export const NODE_REGISTRY: Record<string, NodeDefinition> = {
     description: 'High-performance HTTP reverse proxy and load distributor.',
   },
 
-  // --- Compute & APIs (8) ---
+  // --- Compute & APIs (9) ---
+  'service-springboot': {
+    type: 'service-springboot',
+    label: 'Spring Boot Microservice (Java)',
+    category: 'Compute & APIs',
+    icon: 'Leaf',
+    defaultReplicas: 3,
+    defaultCapacityQps: 2200,
+    defaultLatencyMs: 40,
+    description: 'Enterprise Java / Spring Boot application running on JVM with connection and thread pooling.',
+  },
   'service-app': {
     type: 'service-app',
     label: 'Application Server (Node/Go)',
