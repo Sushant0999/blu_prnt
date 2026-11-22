@@ -288,6 +288,8 @@ export const PlaygroundPage: React.FC = () => {
           id,
           source: val.source,
           target: val.target,
+          sourceHandle: val.sourceHandle,
+          targetHandle: val.targetHandle,
           animated: true,
         });
       });
@@ -338,7 +340,13 @@ export const PlaygroundPage: React.FC = () => {
             });
           });
           seedEdges.forEach((e) => {
-            edgesMap.set(e.id, { id: e.id, source: e.source, target: e.target });
+            edgesMap.set(e.id, {
+              id: e.id,
+              source: e.source,
+              target: e.target,
+              sourceHandle: e.sourceHandle,
+              targetHandle: e.targetHandle,
+            });
           });
           settingsMap.set('targetRps', seedRps);
         });
@@ -611,7 +619,15 @@ export const PlaygroundPage: React.FC = () => {
       if (isCollab) {
         const edgesMap = doc.getMap('edges');
         transact(() => {
-          severedEdgesBackup.forEach((e) => edgesMap.set(e.id, { id: e.id, source: e.source, target: e.target }));
+          severedEdgesBackup.forEach((e) =>
+            edgesMap.set(e.id, {
+              id: e.id,
+              source: e.source,
+              target: e.target,
+              sourceHandle: e.sourceHandle,
+              targetHandle: e.targetHandle,
+            })
+          );
         });
       } else {
         setLocalEdges((eds) => {
@@ -794,6 +810,8 @@ export const PlaygroundPage: React.FC = () => {
             id: edgeId,
             source: connection.source,
             target: connection.target,
+            sourceHandle: connection.sourceHandle,
+            targetHandle: connection.targetHandle,
           });
         });
       } else {

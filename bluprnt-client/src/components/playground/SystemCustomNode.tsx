@@ -197,11 +197,13 @@ export const SystemCustomNode = memo(({ data, selected }: NodeProps<SystemNodeDa
       {/* Target connection point (left & top) */}
       <Handle
         type="target"
+        id="left"
         position={Position.Left}
         className="w-3.5 h-3.5 !bg-cyan-500 border-2 border-white dark:border-slate-950 !-left-2 z-30 transition-transform hover:scale-125"
       />
       <Handle
         type="target"
+        id="top"
         position={Position.Top}
         className="w-3.5 h-3.5 !bg-cyan-500 border-2 border-white dark:border-slate-950 !-top-2 z-30 transition-transform hover:scale-125"
       />
@@ -352,11 +354,13 @@ export const SystemCustomNode = memo(({ data, selected }: NodeProps<SystemNodeDa
       {/* Source connection point (right & bottom) */}
       <Handle
         type="source"
+        id="right"
         position={Position.Right}
         className="w-3.5 h-3.5 !bg-indigo-500 border-2 border-slate-950 !-right-2 z-30 transition-transform hover:scale-125"
       />
       <Handle
         type="source"
+        id="bottom"
         position={Position.Bottom}
         className="w-3.5 h-3.5 !bg-indigo-500 border-2 border-slate-950 !-bottom-2 z-30 transition-transform hover:scale-125"
       />
