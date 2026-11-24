@@ -10,6 +10,12 @@ import { FlashcardsPage } from './pages/FlashcardsPage';
 import { CasesPage } from './pages/CasesPage';
 import { InterviewPage } from './pages/InterviewPage';
 import { ProPage } from './pages/ProPage';
+import { LldHomePage } from './pages/LldHomePage';
+import { LldProblemsPage } from './pages/LldProblemsPage';
+import { LldProblemWorkspacePage } from './pages/LldProblemWorkspacePage';
+import { LldPatternsPage } from './pages/LldPatternsPage';
+import { LldPatternDetailPage } from './pages/LldPatternDetailPage';
+import { LldDesignsPage } from './pages/LldDesignsPage';
 import { useThemeStore } from './stores/useThemeStore';
 
 export const App: React.FC = () => {
@@ -38,6 +44,12 @@ export const App: React.FC = () => {
           <Route path="/flashcards" element={<FlashcardsPage />} />
           <Route path="/cases" element={<CasesPage />} />
           <Route path="/interview" element={<InterviewPage />} />
+          <Route path="/lld" element={<LldHomePage />} />
+          <Route path="/lld/problems" element={<LldProblemsPage />} />
+          <Route path="/lld/problems/:id" element={<LldProblemWorkspacePage />} />
+          <Route path="/lld/patterns" element={<LldPatternsPage />} />
+          <Route path="/lld/patterns/:id" element={<LldPatternDetailPage />} />
+          <Route path="/lld/designs" element={<LldDesignsPage />} />
           <Route path="/pro" element={<ProPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

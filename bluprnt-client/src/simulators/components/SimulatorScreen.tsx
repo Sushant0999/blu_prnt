@@ -96,6 +96,7 @@ export const SimulatorScreen: React.FC<SimulatorScreenProps> = ({
             liveState={liveState}
             latestOutcome={outcomesHistory[outcomesHistory.length - 1]}
             params={params}
+            onTriggerFailure={triggerFailure}
           >
             {customVisualizer && customVisualizer(liveState, currentModeId)}
           </VisualCard>

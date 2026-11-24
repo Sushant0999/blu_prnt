@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BluPrnt: Comprehensive Technical Feature & Architecture Report</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0b0f19;
+      --card-bg: #111827;
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --border: #1e293b;
+      --accent: #38bdf8;
+      --accent-glow: rgba(56, 189, 248, 0.15);
+      --code-bg: #0f172a;
+      --table-stripe: #1e293b55;
+    }
+    @media (prefers-color-scheme: light) {
+      :root {
+        --bg: #f8fafc;
+        --card-bg: #ffffff;
+        --text: #0f172a;
+        --text-muted: #64748b;
+        --border: #e2e8f0;
+        --accent: #0284c7;
+        --accent-glow: rgba(2, 132, 199, 0.1);
+        --code-bg: #f1f5f9;
+        --table-stripe: #f8fafc;
+      }
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.65;
+      padding: 2.5rem 1rem;
+    }
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 3rem;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    }
+    @media (max-width: 768px) {
+      .container {
+        padding: 1.5rem;
+      }
+    }
+    .print-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 1.5rem;
+      margin-bottom: 2rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--accent);
+      color: #ffffff;
+      font-weight: 600;
+      font-size: 0.875rem;
+      padding: 0.625rem 1.25rem;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      text-decoration: none;
+      transition: opacity 0.2s;
+    }
+    .btn:hover {
+      opacity: 0.9;
+    }
+    h1 {
+      font-size: 2.25rem;
+      font-weight: 800;
+      letter-spacing: -0.025em;
+      margin-bottom: 1.5rem;
+      color: var(--accent);
+      line-height: 1.25;
+    }
+    h2 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-top: 2.5rem;
+      margin-bottom: 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--border);
+      color: var(--text);
+    }
+    h3 {
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin-top: 1.75rem;
+      margin-bottom: 0.75rem;
+      color: var(--text);
+    }
+    h4 {
+      font-size: 1.05rem;
+      font-weight: 600;
+      margin-top: 1.25rem;
+      margin-bottom: 0.5rem;
+    }
+    p {
+      margin-bottom: 1rem;
+      color: var(--text);
+    }
+    blockquote {
+      border-left: 4px solid var(--accent);
+      background: var(--accent-glow);
+      padding: 1rem 1.25rem;
+      border-radius: 0 8px 8px 0;
+      margin: 1.5rem 0;
+    }
+    blockquote p {
+      margin: 0;
+      font-size: 0.95rem;
+      color: var(--text);
+    }
+    hr {
+      border: none;
+      height: 1px;
+      background: var(--border);
+      margin: 2.5rem 0;
+    }
+    li {
+      margin-bottom: 0.4rem;
+      margin-left: 1.5rem;
+    }
+    li.ol-item {
+      list-style-type: none;
+      margin-left: 0;
+    }
+    code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.875em;
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      padding: 0.15em 0.4em;
+      border-radius: 4px;
+      color: var(--accent);
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem;
+      overflow-x: auto;
+      margin: 1.5rem 0;
+    }
+    pre code {
+      background: none;
+      border: none;
+      padding: 0;
+      color: var(--text);
+      font-size: 0.875rem;
+    }
+    .table-container {
+      width: 100%;
+      overflow-x: auto;
+      margin: 1.5rem 0;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+      text-align: left;
+    }
+    th, td {
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+    th {
+      background: var(--code-bg);
+      font-weight: 600;
+      color: var(--text);
+    }
+    tr:nth-child(even) {
+      background: var(--table-stripe);
+    }
+    .math {
+      font-family: 'JetBrains Mono', monospace;
+      font-style: italic;
+      background: var(--accent-glow);
+      padding: 0.1em 0.3em;
+      border-radius: 3px;
+    }
+    .math-block {
+      text-align: center;
+      margin: 1.25rem 0;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.05rem;
+      padding: 1rem;
+      background: var(--code-bg);
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+    a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+    @media print {
+      body {
+        background: white !important;
+        color: black !important;
+        padding: 0 !important;
+      }
+      .container {
+        box-shadow: none !important;
+        border: none !important;
+        max-width: 100% !important;
+        padding: 0 !important;
+      }
+      .print-bar {
+        display: none !important;
+      }
+      code, pre, blockquote, table, th {
+        color: black !important;
+        background: #f8fafc !important;
+        border-color: #cbd5e1 !important;
+      }
+      a {
+        color: black !important;
+        text-decoration: underline !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="print-bar">
+      <div>
+        <span style="font-size:0.875rem; color:var(--text-muted); font-weight:500;">BluPrnt System Design Studio</span>
+      </div>
+      <div>
+        <button class="btn" onclick="window.print()">🖨️ Print / Save as PDF</button>
+      </div>
+    </div>
+    <h1>BluPrnt: Exhaustive System Architecture &amp; Feature Specification Report</h1>
+<blockquote><p><strong>Document Type:</strong> Technical System Specification &amp; Feature Catalog</p></blockquote>
+<blockquote><p><strong>Target Audience:</strong> Technical Reviewers, Software Architects, Engineering Leads, AI Systems (Claude / Senior Technical Reviewers)</p></blockquote>
+<blockquote><p><strong>Application Name:</strong> <strong>BluPrnt</strong> (Interactive Distributed Systems &amp; System Design Studio)</p></blockquote>
+<blockquote><p><strong>Repository:</strong> <code>system_design_prep</code> (Full-Stack Monorepo: <code>bluprnt-client</code> + <code>bluprnt-server</code>)</p></blockquote>
+<blockquote><p><strong>Technology Stack:</strong> React 18, TypeScript 5.5, Vite, Tailwind CSS, React Flow, Yjs CRDT, WebSockets, WebRTC, Dexie.js (IndexedDB), Node.js, Express, Vitest (117+ Passing Tests).</p></blockquote>
+<hr/>
+<h2>Executive Summary</h2>
+<p><strong>BluPrnt</strong> is a production-grade, all-in-one interactive learning, discrete-event simulation, and real-time collaborative whiteboard studio purpose-built for Distributed Systems and System Design. It bridges the gap between abstract distributed systems theory and operational reality by unifying:</p>
+<li class="ol-item"><strong>1.</strong> An <strong>interactive drag-and-drop React Flow architectural canvas</strong> with real-time multi-user CRDT collaboration.</li>
+<li class="ol-item"><strong>2.</strong> A <strong>discrete-event <span class="math">M/M/c</span> queuing simulation engine</strong> calculating DAG critical path latency, worker concurrency, and dropped traffic.</li>
+<li class="ol-item"><strong>3.</strong> An <strong>in-flight fault injection Chaos Studio</strong> and an automated <strong>A+ to F Reliability &amp; Single Point of Failure (SPOF) Linter</strong>.</li>
+<li class="ol-item"><strong>4.</strong> An <strong>Architecture Challenge Arena</strong> featuring real-world incident drills (Black Friday, Zero-SPOF Ledger, Low-Latency Dispatch).</li>
+<li class="ol-item"><strong>5.</strong> <strong>18 universal, auto-streaming distributed algorithm visualizers</strong> with dual-mode continuous streaming and frame-by-frame lockstep step-through execution.</li>
+<li class="ol-item"><strong>6.</strong> <strong>Back-of-the-envelope capacity calculators</strong> with real-time Pareto distributions and cloud infrastructure cost estimation.</li>
+<li class="ol-item"><strong>7.</strong> An <strong>algorithmic spaced repetition system (SRS)</strong> powered by the SuperMemo SM-2 engine.</li>
+<li class="ol-item"><strong>8.</strong> A comprehensive <strong>curriculum, real-world senior case studies, and mock staff interview scenarios</strong>.</li>
+<li class="ol-item"><strong>9.</strong> A unified <strong>single-instance full-stack deployment</strong> supporting offline PWA execution, local IndexedDB caching, and cloud delta sync.</li>
+<hr/>
+<h2>1. Collaborative Topology Playground (Whiteboard &amp; Canvas)</h2>
+<p>The Playground (<code>/playground</code>) is BluPrnt&#x27;s flagship visual architecture studio where users construct, simulate, and stress-test distributed topologies.</p>
+<h3>1.1 Canvas Infrastructure &amp; Interaction Design</h3>
+<li style="margin-left:0px;"><strong>React Flow Integration:</strong> High-performance DAG rendering with hardware-accelerated pan, zoom, background dot-grid snapping, and dynamic interactive mini-map.</li>
+<li style="margin-left:0px;"><strong>Smart Ergonomic Viewport:</strong> <code>fitViewOptions={{ padding: 0.25, minZoom: 0.7, maxZoom: 1.15 }}</code> prevents microscopic scaling on large viewports while ensuring all components are immediately readable.</li>
+<li style="margin-left:0px;"><strong>Collapsible Component Catalog (<code>NodePalette</code>):</strong> Left-docked drawer grouping 43 production-grade cloud components across 7 infrastructure categories. Features instant toggle collapse to recover 256px of horizontal workspace.</li>
+<li style="margin-left:0px;"><strong>3-Way Edge Disconnection:</strong></li>
+<li class="ol-item"><strong>1.</strong> Hovering directly over any animated edge badge reveals an instant red <code>×</code> disconnect trigger.</li>
+<li class="ol-item"><strong>2.</strong> Selecting any edge on the canvas and pressing <code>Backspace</code> or <code>Delete</code>.</li>
+<li class="ol-item"><strong>3.</strong> Opening the Right Sidebar Properties Inspector and clicking <code>×</code> next to any upstream or downstream dependency.</li>
+<li style="margin-left:0px;"><strong>Edge Routing &amp; Dynamic Bezier Paths:</strong> Custom <code>AnimatedEdge</code> rendering SVG particle animations traveling along bezier lines. Flow velocity and particle frequency dynamically scale with real-time RPS load. Packet colors indicate health:</li>
+<li style="margin-left:24px;"><strong>Cyan (<code>#06b6d4</code>):</strong> Healthy flow (<span class="math">&lt;70\%</span> link saturation).</li>
+<li style="margin-left:24px;"><strong>Amber (<code>#f59e0b</code>):</strong> Congested link (<span class="math">70\% - 100\%</span> saturation).</li>
+<li style="margin-left:24px;"><strong>Rose (<code>#f43f5e</code>):</strong> Severe packet dropping / bottleneck (<span class="math">&gt;100\%</span> saturation).</li>
+<h3>1.2 Enterprise Component Registry (43 Dedicated Components Across 7 Tiers)</h3>
+<p>Each component carries deterministic default configurations (replicas, baseline QPS per instance, baseline latency in ms, category, icon, and operational description):</p>
+<li class="ol-item"><strong>1.</strong> <strong>Ingress &amp; Clients (8 Components):</strong></li>
+<li style="margin-left:36px;"><code>client-web</code>: Single-Page Application (SPA) browser issuing HTTPS &amp; WebSocket requests.</li>
+<li style="margin-left:36px;"><code>client-mobile</code>: Native iOS/Android clients with intermittent cellular latency.</li>
+<li style="margin-left:36px;"><code>client-iot</code>: IoT telemetry fleet emitting high-frequency MQTT/UDP packets.</li>
+<li style="margin-left:36px;"><code>dns-route53</code>: Anycast GeoDNS with latency-based routing (Route 53).</li>
+<li style="margin-left:36px;"><code>cdn-edge</code>: Cloudflare / CloudFront Edge caching static assets and dynamic responses.</li>
+<li style="margin-left:36px;"><code>load-balancer-l4</code>: AWS NLB / Layer 4 TCP/UDP ultra-low-latency load balancer.</li>
+<li style="margin-left:36px;"><code>api-gateway</code>: Kong / Envoy API Gateway terminating TLS, enforcing auth &amp; rate limiting.</li>
+<li style="margin-left:36px;"><code>reverse-proxy-nginx</code>: Nginx reverse proxy and HTTP connection multiplexer.</li>
+<li class="ol-item"><strong>2.</strong> <strong>Compute &amp; APIs (9 Components):</strong></li>
+<li style="margin-left:36px;"><code>service-springboot</code>: Spring Boot Java microservice with HikariCP database connection pooling.</li>
+<li style="margin-left:36px;"><code>service-app</code>: General-purpose Node.js/Go API application service.</li>
+<li style="margin-left:36px;"><code>service-auth</code>: Dedicated OAuth2 / JWT authentication service.</li>
+<li style="margin-left:36px;"><code>service-payment</code>: PCI-DSS compliant payment processing service.</li>
+<li style="margin-left:36px;"><code>service-search-api</code>: Query dispatch and Elasticsearch aggregation gateway.</li>
+<li style="margin-left:36px;"><code>service-worker</code>: Asynchronous background batch queue worker.</li>
+<li style="margin-left:36px;"><code>service-serverless</code>: AWS Lambda / Cloud Functions ephemeral compute.</li>
+<li style="margin-left:36px;"><code>service-ml-inference</code>: GPU-accelerated model serving and inference endpoint.</li>
+<li style="margin-left:36px;"><code>service-graphql</code>: Apollo GraphQL federation and query resolution gateway.</li>
+<li class="ol-item"><strong>3.</strong> <strong>Caching (5 Components):</strong></li>
+<li style="margin-left:36px;"><code>cache-redis</code>: Redis standalone / cluster in-memory key-value store.</li>
+<li style="margin-left:36px;"><code>cache-memcached</code>: Multi-threaded high-throughput slab memory cache.</li>
+<li style="margin-left:36px;"><code>cache-redis-pubsub</code>: Redis Pub/Sub low-latency event broker.</li>
+<li style="margin-left:36px;"><code>cache-distributed-ring</code>: Consistent hash partitioned distributed cache cluster.</li>
+<li style="margin-left:36px;"><code>cache-app-local</code>: Local in-process memory cache (Guava / Caffeine / LRU).</li>
+<li class="ol-item"><strong>4.</strong> <strong>Databases &amp; Storage (8 Components):</strong></li>
+<li style="margin-left:36px;"><code>db-postgres-primary</code>: PostgreSQL ACID primary relational database.</li>
+<li style="margin-left:36px;"><code>db-postgres-replica</code>: Read-only asynchronous read replica.</li>
+<li style="margin-left:36px;"><code>db-mysql-cluster</code>: MySQL Galera / InnoDB multi-master cluster.</li>
+<li style="margin-left:36px;"><code>db-mongodb</code>: Document store with sharded collections.</li>
+<li style="margin-left:36px;"><code>db-cassandra</code>: Wide-column distributed NoSQL database with tunable consistency.</li>
+<li style="margin-left:36px;"><code>db-dynamodb</code>: Fully managed serverless key-value / document database.</li>
+<li style="margin-left:36px;"><code>db-clickhouse</code>: Columnar OLAP analytical database for real-time aggregation.</li>
+<li style="margin-left:36px;"><code>db-neo4j</code>: Property graph database for social graph traversal.</li>
+<li class="ol-item"><strong>5.</strong> <strong>Queues &amp; Streaming (5 Components):</strong></li>
+<li style="margin-left:36px;"><code>queue-kafka</code>: Distributed partitioned event log and streaming broker.</li>
+<li style="margin-left:36px;"><code>queue-rabbitmq</code>: AMQP message broker supporting complex routing keys.</li>
+<li style="margin-left:36px;"><code>queue-aws-sqs</code>: Managed distributed point-to-point message queue.</li>
+<li style="margin-left:36px;"><code>queue-pulsar</code>: Multi-tenant message streaming with tiered storage.</li>
+<li style="margin-left:36px;"><code>queue-event-bridge</code>: Event bus routing decoupled SaaS events.</li>
+<li class="ol-item"><strong>6.</strong> <strong>Storage &amp; Search (4 Components):</strong></li>
+<li style="margin-left:36px;"><code>storage-s3</code>: S3-compatible highly durable object storage.</li>
+<li style="margin-left:36px;"><code>search-elasticsearch</code>: Distributed Lucene inverted index search cluster.</li>
+<li style="margin-left:36px;"><code>storage-efs-nfs</code>: Elastic distributed Network File System.</li>
+<li style="margin-left:36px;"><code>storage-cold-glacier</code>: High-latency archival cold storage.</li>
+<li class="ol-item"><strong>7.</strong> <strong>Resilience &amp; Security (4 Components):</strong></li>
+<li style="margin-left:36px;"><code>resilience-waf</code>: Web Application Firewall protecting against OWASP Top 10 / DDoS.</li>
+<li style="margin-left:36px;"><code>resilience-circuit-breaker</code>: Envoy / Resilience4j distributed circuit breaker.</li>
+<li style="margin-left:36px;"><code>resilience-rate-limiter</code>: Redis-backed token bucket distributed rate limiter.</li>
+<li style="margin-left:36px;"><code>resilience-distributed-lock</code>: Redlock / ZooKeeper distributed mutex coordinator.</li>
+<h3>1.3 Pre-Loaded Enterprise Production Templates</h3>
+<p>Users can switch instantly between production architectures:</p>
+<li style="margin-left:0px;"><strong>Blank Canvas (<code>blank</code>):</strong> Empty-state starter with quick-add pills for rapid prototyping.</li>
+<li style="margin-left:0px;"><strong>Parallel Spring Boot Microservices (<code>parallel-spring-services</code>):</strong> Web Client <span class="math">\rightarrow</span> Layer 7 Gateway <span class="math">\rightarrow</span> 4 parallel services (Orders, Users, Catalog, Billing) <span class="math">\rightarrow</span> Shared PostgreSQL Primary.</li>
+<li style="margin-left:0px;"><strong>URL Shortener / Bitly (<code>url-shortener</code>):</strong> Web Clients <span class="math">\rightarrow</span> CDN Edge <span class="math">\rightarrow</span> API Gateway <span class="math">\rightarrow</span> URL Redirection App <span class="math">\rightarrow</span> Redis Cache <span class="math">\rightarrow</span> PostgreSQL Storage.</li>
+<li style="margin-left:0px;"><strong>E-Commerce Checkout (<code>ecommerce-checkout</code>):</strong> Inbound Ingress <span class="math">\rightarrow</span> API Gateway <span class="math">\rightarrow</span> Order Service <span class="math">\rightarrow</span> Kafka Bus <span class="math">\rightarrow</span> Payment Service + Inventory Worker.</li>
+<li style="margin-left:0px;"><strong>Uber Geospatial Dispatch (<code>uber-dispatch</code>):</strong> Driver/Rider Mobile Fleet <span class="math">\rightarrow</span> Envoy Ingress <span class="math">\rightarrow</span> H3 Hexagonal Spatial Indexer <span class="math">\rightarrow</span> Dispatch Matching Engine <span class="math">\rightarrow</span> Kafka Telemetry <span class="math">\rightarrow</span> Redis Geo-Cache <span class="math">\rightarrow</span> Cassandra Master Trip Store.</li>
+<li style="margin-left:0px;"><strong>Netflix Streaming Playback (<code>netflix-streaming</code>):</strong> Global Smart TVs <span class="math">\rightarrow</span> Route 53 GeoDNS <span class="math">\rightarrow</span> Open Connect CDN Edge + Zuul Gateway <span class="math">\rightarrow</span> Playback Orchestrator <span class="math">\rightarrow</span> EVCache (Memcached Cluster) <span class="math">\rightarrow</span> Cassandra Title DB.</li>
+<li style="margin-left:0px;"><strong>Stripe Double-Entry Ledger (<code>stripe-ledger</code>):</strong> Merchant Terminals <span class="math">\rightarrow</span> Idempotency &amp; Auth Gateway <span class="math">\rightarrow</span> Payment Charge Engine <span class="math">\rightarrow</span> Card Network Connector + Double-Entry Ledger Database <span class="math">\rightarrow</span> Outbox Dead Letter Queue.</li>
+<hr/>
+<h2>2. Discrete-Event Simulation &amp; Queuing Theory Engine</h2>
+<p>BluPrnt does not rely on static diagrams. It runs a deterministic mathematical simulation model over the canvas DAG.</p>
+<h3>2.1 Queuing Theory (<span class="math">M/M/c</span>) &amp; Worker Concurrency Model</h3>
+<li style="margin-left:0px;">Implements an <strong><span class="math">M/M/c</span> queuing model</strong> based on Little&#x27;s Law (<span class="math">L = \lambda W</span>).</li>
+<li style="margin-left:0px;"><strong>Worker Allocation:</strong> Each component replica provisions a worker thread pool (<span class="math">maxWorkers = \text{replicas} \times 100</span>).</li>
+<li style="margin-left:0px;"><strong>Non-Linear Queuing Wait Times (<span class="math">W_q</span>):</strong> When node traffic approaches utilization <span class="math">\rho = \frac{\lambda}{c \cdot \mu} \to 1.0</span>, the wait time spikes exponentially:</li>
+<div class="math-block">W_q = \frac{\rho^{\sqrt{2(c+1)}}}{c(1 - \rho)} \cdot \frac{1}{\mu}</div>
+<li style="margin-left:0px;"><strong>Tail Latency Percentiles:</strong> Computes deterministic <span class="math">p50</span>, <span class="math">p95</span>, and <span class="math">p99</span> tail latency across all nodes, incorporating processing jitter and queuing delay.</li>
+<li style="margin-left:0px;"><strong>Cascading Failure Risk Classifier:</strong> Analyzes upstream saturation and assigns categorical risk: <code>low</code>, <code>moderate</code>, <code>high</code>, or <code>severe</code>.</li>
+<h3>2.2 DAG Latency &amp; 3-Color Cycle Detection Engine (<code>dagLatency.ts</code>)</h3>
+<li style="margin-left:0px;"><strong>Topological Traversal:</strong> Computes the true end-to-end critical path latency from root ingress nodes to terminal storage/queue nodes.</li>
+<li style="margin-left:0px;"><strong>3-Color Depth-First Search (DFS):</strong> Node coloring (<code>0 = Unvisited</code>, <code>1 = Visiting</code>, <code>2 = Visited</code>) reliably detects cyclic dependencies in real time, alerting the user via a prominent warning pill without locking or crashing the browser thread.</li>
+<li style="margin-left:0px;"><strong>Dead/Killed Node Bypassing:</strong> When a node is knocked offline by Chaos Studio, the DAG solver isolates the dead branch and marks connected downstream latency as disconnected (<span class="math">\infty</span>).</li>
+<h3>2.3 Bottleneck &amp; Traffic Saturation Engine (<code>bottleneck.ts</code>)</h3>
+<li style="margin-left:0px;"><strong>Throughput Calculation:</strong> Evaluates each node&#x27;s total capacity:</li>
+<div class="math-block">C_{\text{total}} = \text{replicas} \times \text{capacityQps} \times \text{tierMultiplier}</div>
+<li style="margin-left:0px;"><strong>Saturation Percentage:</strong> <span class="math">\text{Saturation} = \frac{\text{Incoming RPS}}{C_{\text{total}}} \times 100\%</span>.</li>
+<li style="margin-left:0px;"><strong>Dropped Request Calculation:</strong> If incoming traffic exceeds <span class="math">C_{\text{total}}</span>, dropped requests are calculated: <span class="math">\text{Dropped RPS} = \text{Incoming RPS} - C_{\text{total}}</span>.</li>
+<li style="margin-left:0px;"><strong>Dynamic Visual Health Rings:</strong></li>
+<li style="margin-left:24px;"><strong>Green (<span class="math">&lt;70\%</span>):</strong> Normal healthy operation.</li>
+<li style="margin-left:24px;"><strong>Amber (<span class="math">70\% - 100\%</span>):</strong> Elevated load nearing threshold.</li>
+<li style="margin-left:24px;"><strong>Red / Pulsing Rose (<span class="math">&gt;100\%</span>):</strong> Critical capacity bottleneck with active packet dropping.</li>
+<hr/>
+<h2>3. Vertical Machine Sizing &amp; Infrastructure Cost Estimation</h2>
+<p>Beyond scaling horizontal replica counts, BluPrnt enables per-node vertical hardware sizing.</p>
+<h3>3.1 Five Virtual Machine Hardware Tiers (<code>machineTiers.ts</code>)</h3>
+<p>Each tier alters the node&#x27;s baseline QPS capacity, modifies its processing latency multiplier, and updates cloud infrastructure billing:</p>
+<li class="ol-item"><strong>1.</strong> <strong>T1: Micro (<code>micro</code> - AWS <code>t3.micro</code> equivalent):</strong></li>
+<li style="margin-left:36px;">Specifications: 1 vCPU, 2 GB RAM, <span class="math">15/month (</span>0.02/hr).</li>
+<li style="margin-left:36px;">Capacity: 500 base QPS, <span class="math">1.4\times</span> latency penalty.</li>
+<li style="margin-left:36px;">Role: Lightweight ingress proxies, development mocks, low-throughput worker scripts.</li>
+<li class="ol-item"><strong>2.</strong> <strong>T2: Standard (<code>standard</code> - AWS <code>c6i.large</code> equivalent):</strong></li>
+<li style="margin-left:36px;">Specifications: 4 vCPU, 8 GB RAM, <span class="math">65/month (</span>0.09/hr).</li>
+<li style="margin-left:36px;">Capacity: 2,500 base QPS, <span class="math">1.0\times</span> baseline latency.</li>
+<li style="margin-left:36px;">Role: General-purpose microservices, API servers.</li>
+<li class="ol-item"><strong>3.</strong> <strong>T3: Compute-Optimized (<code>compute</code> - AWS <code>c6i.4xlarge</code> equivalent):</strong></li>
+<li style="margin-left:36px;">Specifications: 16 vCPU, 32 GB RAM, <span class="math">260/month (</span>0.36/hr).</li>
+<li style="margin-left:36px;">Capacity: 10,000 base QPS, <span class="math">0.65\times</span> latency speedup.</li>
+<li style="margin-left:36px;">Role: Cryptographic verification, payment auth, encoding, high-frequency APIs.</li>
+<li class="ol-item"><strong>4.</strong> <strong>T4: Memory-Optimized (<code>memory</code> - AWS <code>r6i.8xlarge</code> equivalent):</strong></li>
+<li style="margin-left:36px;">Specifications: 32 vCPU, 128 GB RAM, <span class="math">680/month (</span>0.94/hr).</li>
+<li style="margin-left:36px;">Capacity: 25,000 base QPS, <span class="math">0.45\times</span> latency speedup.</li>
+<li style="margin-left:36px;">Role: Redis clusters, in-memory caches, Cassandra ring nodes.</li>
+<li class="ol-item"><strong>5.</strong> <strong>T5: Bare Metal Ultra (<code>metal</code> - AWS <code>c6i.metal</code> equivalent):</strong></li>
+<li style="margin-left:36px;">Specifications: 64 vCPU, 256 GB RAM, <span class="math">1,650/month (</span>2.29/hr).</li>
+<li style="margin-left:36px;">Capacity: 60,000 base QPS, <span class="math">0.30\times</span> ultra-low latency.</li>
+<li style="margin-left:36px;">Role: Extreme real-time matching engines, primary relational databases, Kafka message brokers.</li>
+<h3>3.2 Real-Time Cloud Infrastructure Bill Estimator (<code>costEstimator.ts</code>)</h3>
+<p>Calculates estimated monthly infrastructure expenses based on provisioned architecture:</p>
+<li style="margin-left:0px;"><strong>Compute Costs:</strong> <span class="math">\sum (\text{replicas} \times \text{tierDef.monthlyCostUsd})</span>.</li>
+<li style="margin-left:0px;"><strong>Stateful Storage Costs:</strong> Automatically detects stateful components (Databases, Queues, Caches) and provisions 500GB gp3 SSD storage with high IOPS ($50/month per stateful replica).</li>
+<li style="margin-left:0px;"><strong>Network Egress Billing:</strong> Assumes 2.5 KB average HTTP transaction size at AWS/Cloudflare egress rates of $0.085 per GB:</li>
+<div class="math-block">\text{GB Egress} = \frac{\text{Target RPS} \times 2,592,000 \text{ sec/month} \times 2.5 \text{ KB}}{1024 \times 1024}</div>
+<li style="margin-left:0px;"><strong>KPI Metrics:</strong> Outputs Total Monthly Spend (<span class="math">/mo), Compute Spend, Storage Spend, Network Egress Spend, and Unit Cost per Million Requests (</span>/M req).</li>
+<hr/>
+<h2>4. Chaos Studio &amp; Fault Injection Suite</h2>
+<p>A dedicated in-flight chaos engineering control panel (<code>ChaosStudio.tsx</code>) allows engineers to simulate distributed incidents with zero page reloads:</p>
+<li style="margin-left:0px;"><strong>Traffic Surge (3x Spike):</strong> Simulates sudden viral spikes or flash sales, multiplying inbound RPS by <span class="math">3\times</span> to observe autoscaling lag and queue overflow.</li>
+<li style="margin-left:0px;"><strong>Node Kill (Hardware / Process Crash):</strong> Randomly or selectively terminates an active node (<code>isDead: true</code>). All inbound traffic to the killed node drops immediately with <span class="math">100\%</span> failure, validating whether redundant replicas or fallback routes absorb the load.</li>
+<li style="margin-left:0px;"><strong>Sever Link (Network Partition):</strong> Cuts an edge between two specific services to simulate cross-datacenter fiber cuts or AWS Availability Zone (AZ) isolation, testing circuit breaker trips and fallback caches.</li>
+<li style="margin-left:0px;"><strong>Latency Jitter (+250ms Injection):</strong> Injects 250ms of synthetic network jitter across the cluster, exposing cascading thread exhaustion and timeout storms.</li>
+<li style="margin-left:0px;"><strong>Heal All (One-Click Recovery):</strong> Restores all dead nodes, reconnects severed edges, flushes jitter, and clears traffic backpressure back to steady state.</li>
+<hr/>
+<h2>5. Production Reliability Linter &amp; SPOF Auditor</h2>
+<p>The Architecture Linter (<code>architectureLinter.ts</code>) programmatically inspects the canvas topology, evaluates failure modes, and outputs a letter grade (<strong>A+</strong>, <strong>A</strong>, <strong>B</strong>, <strong>C</strong>, <strong>D</strong>, <strong>F</strong>) alongside a numerical score (<span class="math">0 - 100</span>).</p>
+<h3>5.1 Automated Audit Rules &amp; Severity Ratings</h3>
+<li class="ol-item"><strong>1.</strong> <strong>Critical: Service Offline / Killed Node:</strong> Alerts if any killed component is receiving live traffic without failover.</li>
+<li class="ol-item"><strong>2.</strong> <strong>Critical: Capacity Exceeded / Dropping Traffic:</strong> Pinpoints the exact node dropping traffic and specifies the exact number of additional replicas needed to survive.</li>
+<li class="ol-item"><strong>3.</strong> <strong>High: Single Point of Failure (SPOF) on Stateful Databases:</strong> Flags any database or storage component running with <code>replicas: 1</code>. Recommends active-passive read replicas or multi-master replication.</li>
+<li class="ol-item"><strong>4.</strong> <strong>High: Uncached Database Queries:</strong> Flags direct connections from API gateways or web services into databases without an intermediate caching layer (Redis / Memcached).</li>
+<li class="ol-item"><strong>5.</strong> <strong>High: Missing Asynchronous Buffering (No Message Queue):</strong> Flags high-throughput API endpoints connecting directly to slow downstream disk databases without Kafka/RabbitMQ decoupling.</li>
+<li class="ol-item"><strong>6.</strong> <strong>Medium: Compute Service SPOF:</strong> Flags business-critical compute services running with single instances (<code>replicas: 1</code>).</li>
+<li class="ol-item"><strong>7.</strong> <strong>Medium: Missing Edge CDN:</strong> Flags user-facing web clients connecting directly to internal load balancers without an edge CDN (Cloudflare/CloudFront) for static offload and DDoS mitigation.</li>
+<li class="ol-item"><strong>8.</strong> <strong>Info: Single Node Microservice:</strong> Advisory warning for microservices running at lower redundancy tiers.</li>
+<hr/>
+<h2>6. Architecture Incident Challenge Arena</h2>
+<p>Interactive incident drill scenarios (<code>ArchitectureChallengesModal.tsx</code>) presenting production crises with automated real-time objective validation:</p>
+<li class="ol-item"><strong>1.</strong> <strong>Challenge 1: Black Friday Stampede (Intermediate):</strong></li>
+<li style="margin-left:36px;"><strong>Scenario:</strong> E-commerce checkout pipeline hit with 50,000 RPS flash sale demand.</li>
+<li style="margin-left:36px;"><strong>Objectives:</strong></li>
+<li class="ol-item"><strong>1.</strong> Zero dropped requests (<span class="math">0</span> dropped RPS across all nodes).</li>
+<li class="ol-item"><strong>2.</strong> Handled throughput <span class="math">\ge 45,000</span> RPS.</li>
+<li class="ol-item"><strong>3.</strong> Zero nodes running above <span class="math">100\%</span> capacity saturation.</li>
+<li style="margin-left:36px;"><strong>Solution Vector:</strong> Scale Order Service and Inventory Worker replicas, upgrade Kafka broker to Compute tier.</li>
+<li class="ol-item"><strong>2.</strong> <strong>Challenge 2: Zero SPOF Financial Ledger (Staff Engineer):</strong></li>
+<li style="margin-left:36px;"><strong>Scenario:</strong> Audit a Stripe-style payment ledger for high availability and regulatory resilience.</li>
+<li style="margin-left:36px;"><strong>Objectives:</strong></li>
+<li class="ol-item"><strong>1.</strong> Reliability Audit Score <span class="math">\ge 90\%</span>.</li>
+<li class="ol-item"><strong>2.</strong> All database and storage nodes must have <span class="math">\ge 2</span> redundant replicas.</li>
+<li class="ol-item"><strong>3.</strong> Zero Critical security or availability audit warnings.</li>
+<li style="margin-left:36px;"><strong>Solution Vector:</strong> Provision PostgreSQL read replicas, place Redis cache in front of ledger queries, add Outbox dead-letter queues.</li>
+<li class="ol-item"><strong>3.</strong> <strong>Challenge 3: Ultra-Low Latency Geospatial Dispatch (Intermediate):</strong></li>
+<li style="margin-left:36px;"><strong>Scenario:</strong> Uber driver-passenger matching demands sub-35ms dispatch latency under 40,000 RPS.</li>
+<li style="margin-left:36px;"><strong>Objectives:</strong></li>
+<li class="ol-item"><strong>1.</strong> Critical path SLA latency <span class="math">\le 35</span> ms.</li>
+<li class="ol-item"><strong>2.</strong> Cluster throughput <span class="math">\ge 35,000</span> RPS.</li>
+<li class="ol-item"><strong>3.</strong> Dispatch and matching engines upgraded to Compute or Memory tiers.</li>
+<li style="margin-left:36px;"><strong>Solution Vector:</strong> Eliminate slow B-tree hops, leverage in-memory H3 hexagonal indexing, upgrade matchers to <code>c6i.4xlarge</code>.</li>
+<hr/>
+<h2>7. Real-Time Collaborative Whiteboard (Yjs CRDT &amp; WebSockets)</h2>
+<p>BluPrnt supports Google Docs-style real-time collaboration on the architectural canvas (<code>useCollabSession.ts</code>, <code>roomManager.ts</code>, <code>wsHandler.ts</code>).</p>
+<h3>7.1 CRDT Architecture &amp; Document Model</h3>
+<li style="margin-left:0px;"><strong>Yjs Shared Document:</strong> Coordinates state across peers using Conflict-free Replicated Data Types (<code>Y.Doc</code>).</li>
+<li style="margin-left:0px;"><strong>Synchronized Data Maps:</strong></li>
+<li style="margin-left:24px;"><code>nodes</code>: Keyed map of React Flow node positions, dimensions, replicas, tiers, and telemetry.</li>
+<li style="margin-left:24px;"><code>edges</code>: Directed connections with animated state and source/target handle anchors.</li>
+<li style="margin-left:24px;"><code>settings</code>: Active room traffic rate, simulation toggle, and active template.</li>
+<li style="margin-left:24px;"><code>chat</code>: Real-time multi-user chat log with timestamps and user badges.</li>
+<li style="margin-left:24px;"><code>comments</code>: Granular node-anchored comment threads with author attribution and resolution tracking.</li>
+<li style="margin-left:24px;"><code>snapshots</code>: Named version history checkpoints enabling one-click historical restore.</li>
+<h3>7.2 Multi-User Presence &amp; Awareness Protocol</h3>
+<li style="margin-left:0px;"><strong>Live Cursor Tracking:</strong> Broadcasts smooth mouse coordinate vectors (<span class="math">x, y</span>) with assigned peer colors and display names.</li>
+<li style="margin-left:0px;"><strong>Node Selection Outlines:</strong> Displays colored halos and peer name tags around nodes currently selected or being edited by other collaborators.</li>
+<li style="margin-left:0px;"><strong>Top Header Avatar Stack (<code>CollabHeader</code>):</strong> Shows all online collaborators with real-time ping/latency indicators and editable display names.</li>
+<li style="margin-left:0px;"><strong>Role-Based Access Control (RBAC):</strong></li>
+<li style="margin-left:24px;"><strong>Owner:</strong> Full administrative authority, snapshot creation, room token regeneration, and participant expulsion.</li>
+<li style="margin-left:24px;"><strong>Editor:</strong> Read and write permissions to move nodes, add components, connect edges, and run simulations.</li>
+<li style="margin-left:24px;"><strong>Viewer:</strong> Read-only observer mode. Server-side WebSocket enforcement rejects mutation packets from viewers.</li>
+<li style="margin-left:0px;"><strong>Scoped Undo/Redo:</strong> <code>Y.UndoManager</code> is strictly scoped to the local client&#x27;s origin (<code>localOrigin</code>), preventing a user&#x27;s <code>Ctrl+Z</code> from undoing edits made by remote teammates.</li>
+<li style="margin-left:0px;"><strong>Local Offline Cache (<code>y-indexeddb</code>):</strong> Persists collaborative session state in IndexedDB so canvas architectures survive accidental tab closures and connection drops.</li>
+<hr/>
+<h2>8. 18 Universal Auto-Streaming Distributed Algorithm Simulators</h2>
+<p>BluPrnt includes 18 standalone algorithm visualizers accessible under <code>/simulators</code>. Each visualizer features <strong>Universal Auto-Streaming</strong> (starts streaming immediately upon page visit with zero click-to-send friction), dynamic mode switching, failure injection, continuous vs. lockstep debugger modes, and color + shape accessible outcome streams.</p>
+<h3>8.1 Unified Simulator Architecture (<code>SimulatorScreen.tsx</code>, <code>useTrafficGenerator.ts</code>)</h3>
+<li style="margin-left:0px;"><strong>Top Controls Bar:</strong> Live play/pause toggle (<code>Space</code>), reset canvas (<code>R</code>), traffic rate slider (<span class="math">1 - 100</span> req/s), and bursty traffic mode toggle (alternating quiet gaps with <span class="math">4\times</span> traffic bursts).</li>
+<li style="margin-left:0px;"><strong>Dual Execution Modes:</strong></li>
+<li class="ol-item"><strong>1.</strong> <em>Continuous Auto-Streaming Mode:</em> Real-time streaming generator emitting requests according to Poisson/burst distributions.</li>
+<li class="ol-item"><strong>2.</strong> <em>Step-by-Step Debugger Mode (<code>SimulatorDebugger.tsx</code>):</em> Freezes time, allowing frame-by-frame lockstep execution (<code>Step 1 Frame</code>, <code>+10 Fast-Forward</code>) with an execution step counter.</li>
+<li style="margin-left:0px;"><strong>Custom Payload &amp; Key Injector (<code>CustomPayloadInjector.tsx</code>):</strong> Allows users to inject specific keys (e.g. <code>user:4099</code>, <code>order:txn_992</code>) or raw JSON payloads to trace exact hash routing, cache hits, and state transitions.</li>
+<li style="margin-left:0px;"><strong>Accessible Outcome Strip (<code>RequestStrip.tsx</code>):</strong> Renders the last 44 request outcomes. Every outcome is encoded with <strong>both color AND unique geometric shape</strong> for 100% color-blind accessibility:</li>
+<li style="margin-left:24px;">Circle (●), Square (■), Diamond (◆), Triangle (▲), Cross (✕), Slash (⧸).</li>
+<li style="margin-left:0px;"><strong>3 KPI Stat Tiles:</strong> Every module renders three real-time telemetry gauges (e.g., Hit Rate %, Dropped Traffic, Replication Lag).</li>
+<h3>8.2 Comprehensive Verification Matrix of All 18 Modules</h3>
+<div class="table-container"><table>
+<thead><tr><th>#</th><th>Module ID</th><th>Core Algorithm &amp; Visualizer Design</th><th>Implemented Modes</th><th>Color + Shape Outcomes</th><th>Center KPI Metric</th><th>Three Telemetry Stat Tiles</th></tr></thead>
+<tbody>
+<tr><td><strong>1</strong></td><td><code>rate-limiter</code></td><td><strong>Token &amp; Leaky Bucket Cylinder Apparatus:</strong> Animated glass cylinder showing live liquid/token level, refill nozzle stream, and HTTP 429 overflow splash.</td><td>Token Bucket, Leaky Bucket, Fixed Window, Sliding Log, Sliding Counter</td><td>Allowed (●), Throttled (✕), Queued (■)</td><td>Tokens Remaining / Queue Fill %</td><td>Total Inbound, Pass Rate %, Throttled (429)</td></tr>
+<tr><td><strong>2</strong></td><td><code>load-balancer</code></td><td><strong>Multi-Server Rack Cluster:</strong> Server cards (A, B, C) with live active in-flight connection gauges, server weights, and packet routing arrows.</td><td>Round Robin, Weighted Round Robin, Least Connections, Least Response Time, IP Hash, Power of Two Choices</td><td>Server A (●), Server B (■), Server C (◆), 503 Overloaded (✕)</td><td>Active In-Flight Connections</td><td>Total Dispatched, Cluster Imbalance, Dropped (503)</td></tr>
+<tr><td><strong>3</strong></td><td><code>consistent-hashing</code></td><td><strong>360° SVG Hash Ring:</strong> Circular coordinates showing physical node positions, virtual nodes (Vnodes), live streaming key hashes, and a partition load bar chart.</td><td>Standard Ring (1 Slot), Virtual Nodes (Vnodes), Modulo % N, Rendezvous HRW Hashing</td><td>Node 1 (●), Node 2 (■), Node 3 (◆), Node 4 (▲), Remapped (✕)</td><td>Cluster Balance Score %</td><td>Active Nodes, Key Spread (Max-Min), Remappings</td></tr>
+<tr><td><strong>4</strong></td><td><code>cache-policies</code></td><td><strong>8-Slot Memory Cache Matrix:</strong> Memory slot cells showing key tags, hit/miss neon flash indicators, and cold-candidate eviction flags.</td><td>LRU (Least Recently Used), LFU (Least Frequently Used), FIFO, Random Eviction, TTL Expiration</td><td>Cache Hit (●), Cache Miss (■), Evicted (▲), Stampede (✕)</td><td>Hit Ratio %</td><td>Cache Occupancy, Hit Rate %, Total Evictions</td></tr>
+<tr><td><strong>5</strong></td><td><code>bloom-filter</code></td><td><strong>32-Bit Binary Array Grid:</strong> Glowing bit array cells, 3 independent hash functions (<span class="math">k=3</span>), array saturation meter, and zero false-negative guarantee.</td><td>Standard Bloom Filter, Counting Bloom Filter, Cuckoo Filter</td><td>Def Not In Set (●), True Positive (■), False Positive (✕), Inserted (◆)</td><td>Bit Array Saturation %</td><td>Disk Reads Filtered %, False Positive Rate %, Known Keys</td></tr>
+<tr><td><strong>6</strong></td><td><code>lsm-tree</code></td><td><strong>3-Tier Storage Engine:</strong> RAM MemTable (SkipList buffer with fill %), Level 0 SSTables (overlapping disk files), and Level 1 SSTables (compacted deduplicated runs).</td><td>Leveled Compaction (LCS), Size-Tiered (STCS), Time-Window Compaction (TWCS)</td><td>MemTable Write (●), L0 Flush (■), Compaction Merge (◆), I/O Spike (✕)</td><td>MemTable Fill %</td><td>Total Ingestion, Active SSTables, Write Amplification</td></tr>
+<tr><td><strong>7</strong></td><td><code>storage-indexes</code></td><td><strong>B+ Tree vs. LSM vs. Hash Index:</strong> Hierarchical B+ tree node splitting, sequential log appends, and memory hash table collision buckets.</td><td>B+ Tree Index, LSM-Tree Index, In-Memory Hash Index</td><td>Fast Point Read (●), Page Split (■), Seq Append (◆), Hash Collision (✕)</td><td>Avg I/O Latency (ms)</td><td>Total Index Ops, Structural Events, Read Complexity</td></tr>
+<tr><td><strong>8</strong></td><td><code>replication</code></td><td><strong>Distributed Leader-Follower Cluster:</strong> Primary node streaming write-ahead log (WAL) entries to secondary followers with replication lag gauges.</td><td>Single-Leader Async, Single-Leader Sync, Semi-Sync, Quorum (W+R &gt; N)</td><td>Quorum Commit (●), Async Ack (■), Stale Read (◆), Blocked/Timeout (✕)</td><td>Follower Lag (ms)</td><td>Replication Stream, Replication Lag, Stale Reads</td></tr>
+<tr><td><strong>9</strong></td><td><code>sharding</code></td><td><strong>Database Shard Partitioning:</strong> Multiple shard databases with routing hash ranges, directory lookups, and cross-shard scatter-gather queries.</td><td>Hash Sharding, Range Sharding, Directory Lookup, Geographic Sharding</td><td>Shard 1 (●), Shard 2 (■), Shard 3 (◆), Scatter-Gather (▲), Hotspot (✕)</td><td>Max Shard Load %</td><td>Total Queries, Cross-Shard %, Shard Distribution</td></tr>
+<tr><td><strong>10</strong></td><td><code>raft-consensus</code></td><td><strong>5-Node Distributed Quorum Mesh:</strong> Five Raft nodes with crown indicator for elected Leader, heartbeat pulse waves, term election timers, and network partition cuts.</td><td>Log Replication, Leader Election, Partition Isolation</td><td>Heartbeat Ack (●), Log Committed (■), Vote Granted (◆), Quorum Lost (✕)</td><td>Current Term &amp; Quorum Health</td><td>Active Leader, Log Commit Index, Quorum Health</td></tr>
+<tr><td><strong>11</strong></td><td><code>distributed-tx</code></td><td><strong>Multi-Service Transaction Pipeline:</strong> Order <span class="math">\rightarrow</span> Payment <span class="math">\rightarrow</span> Inventory <span class="math">\rightarrow</span> Delivery pipeline demonstrating 2PC prepare/commit and Saga compensating rollbacks.</td><td>Saga Orchestration, Saga Choreography, Two-Phase Commit (2PC), Three-Phase Commit (3PC)</td><td>Commit Success (●), Prepare Phase (■), Saga Rollback (◆), Abort/Timeout (✕)</td><td>Transaction Success %</td><td>Total Executions, Success Rate %, Saga Compensations</td></tr>
+<tr><td><strong>12</strong></td><td><code>circuit-breaker</code></td><td><strong>Tri-State FSM Apparatus:</strong> Illuminated Finite State Machine (<code>CLOSED</code> <span class="math">\longleftrightarrow</span> <code>HALF-OPEN</code> <span class="math">\longleftrightarrow</span> <code>OPEN</code>) with trip failure counters and recovery cooldown timer.</td><td>Standard (Martin Fowler), Adaptive Latency Percentile</td><td>Succeeded (●), Fast-Failed (✕), Probe Trial (■), Fallback (◆)</td><td>State (<code>CLOSED</code> / <code>OPEN</code> / <code>HALF-OPEN</code>)</td><td>Current State, Total Trips, Fast-Failed Rejections</td></tr>
+<tr><td><strong>13</strong></td><td><code>retry-strategies</code></td><td><strong>Retry Storm &amp; Backoff Timeline:</strong> Visualizes client retry attempts over time with exponential delays, random jitter distributions, and cascading retry storms.</td><td>Full Jitter, Exponential Backoff, Fixed Delay, No Retry, Retry Storm</td><td>First Try OK (●), Retry Success (■), Retries Exhausted (✕), Storm Wave (▲)</td><td>Traffic Multiplier (<span class="math">x</span>)</td><td>Logical Inbound, Wire Requests Sent, Traffic Multiplier</td></tr>
+<tr><td><strong>14</strong></td><td><code>message-queue</code></td><td><strong>Kafka-Style Partitioned Topic Stream:</strong> Message conveyor belts showing partition offsets, consumer group lag markers, and dead letter queue (DLQ) routing.</td><td>Partitioned Consumer Group, Point-to-Point, Pub/Sub Fanout, Dead Letter Queue (DLQ)</td><td>Enqueued (●), Consumed (■), Pub/Sub Fanout (◆), DLQ Routed (✕)</td><td>Backlog Depth (msgs)</td><td>Total Produced, Consumer Lag, Dead Letter (DLQ)</td></tr>
+<tr><td><strong>15</strong></td><td><code>cdn-edge</code></td><td><strong>Global Edge vs. Origin Architecture:</strong> Edge PoP nodes caching content globally with origin shield fallbacks and Stale-While-Revalidate (SWR) background refreshes.</td><td>Pull CDN, Push CDN, Stale-While-Revalidate (SWR)</td><td>Edge Hit (●), Origin Fetch (■), SWR Revalidate (◆), Origin Down (✕)</td><td>Edge Offload %</td><td>Edge Inbound, Origin Offload %, Origin Shield Hits</td></tr>
+<tr><td><strong>16</strong></td><td><code>gossip-protocol</code></td><td><strong>Decentralized Node Mesh Network:</strong> Nodes exchanging state rumors via randomized peer fanout, tracking infection spread and Phi accrual failure detection.</td><td>Push-Pull Gossip, Push-Only Rumors, Phi Accrual Failure Detector</td><td>Disseminated (●), Merged/Updated (■), Accrual Heartbeat (◆), Suspected Dead (✕)</td><td>State Convergence %</td><td>Cluster Size, State Convergence %, Suspected Dead Nodes</td></tr>
+<tr><td><strong>17</strong></td><td><code>autoscaling</code></td><td><strong>Kubernetes Horizontal Pod Autoscaler (HPA):</strong> Pod replica matrix scaling in and out dynamically based on CPU/traffic watermarks and CoDel load shedding.</td><td>Reactive (CPU Threshold), Predictive (ML Anticipation), Load Shedding (CoDel)</td><td>Processed SLA (●), Scale-Out Pod (◆), Scale-In Pod (■), Load Shed 503 (✕)</td><td>Active Pod Replicas</td><td>Cluster Capacity, Active Pods, Shed Traffic (503)</td></tr>
+<tr><td><strong>18</strong></td><td><code>idempotency</code></td><td><strong>Idempotent API Gateway &amp; Deduplication:</strong> Client retry stream passing through an idempotency lock table verifying unique request tokens and preventing double mutations.</td><td>Idempotency Keys (Effectively Once), At-Least-Once Delivery, At-Most-Once Delivery</td><td>New Processed (●), Deduped Safe (■), Double Charge (✕), Dropped Packet (▲)</td><td>Safe Dedup Rate %</td><td>Total Inbound, Safely Deduped, Duplicate Write Faults</td></tr>
+</tbody></table></div>
+<hr/>
+<h2>9. Back-of-the-Envelope Capacity Sizing Calculators</h2>
+<p>The Calculators page (<code>/calculators</code> - <code>sizingMath.ts</code>) provides deterministic formulas and interactive sliders for system sizing calculations:</p>
+<h3>9.1 Sizing Modules</h3>
+<li class="ol-item"><strong>1.</strong> <strong>QPS to Server Count Sizing:</strong></li>
+<li style="margin-left:36px;">Inputs: Daily Active Users (DAU), Requests per User per Day, Peak-to-Average Traffic Ratio, Server QPS Capacity, Redundancy Buffer (<span class="math">N+2</span> headroom).</li>
+<li style="margin-left:36px;">Outputs: Average QPS, Peak QPS, Required Server Instances, Cluster Headroom %.</li>
+<li class="ol-item"><strong>2.</strong> <strong>Storage Volume &amp; Retention Sizing:</strong></li>
+<li style="margin-left:36px;">Inputs: Daily New Records, Average Record Size (KB), Retention Horizon (Years), Storage Replication Factor (<span class="math">3\times</span>), Index/Metadata Overhead %.</li>
+<li style="margin-left:36px;">Outputs: Raw Daily Ingestion, Total Replicated Storage (TB/PB), Annual Disk Growth Rate.</li>
+<li class="ol-item"><strong>3.</strong> <strong>Network Bandwidth &amp; CDN Offload Sizing:</strong></li>
+<li style="margin-left:36px;">Inputs: Peak RPS, Average Response Payload Size (KB), CDN Edge Cache Hit Rate %.</li>
+<li style="margin-left:36px;">Outputs: Total Edge Ingress Bandwidth (Gbps), Origin Egress Bandwidth (Gbps), Bandwidth Cost Savings %.</li>
+<li class="ol-item"><strong>4.</strong> <strong>Cache RAM &amp; Hot Working Set Sizing:</strong></li>
+<li style="margin-left:36px;">Inputs: Total Unique Keys, Pareto Hot Working Set % (e.g. 80/20 rule), Average Value Size (Bytes), Key Metadata Overhead, Read QPS, Target Cache Hit Rate.</li>
+<li style="margin-left:36px;">Outputs: Required RAM (GB), Number of Cache Nodes needed, Database Queries Avoided per Second.</li>
+<hr/>
+<h2>10. Spaced Repetition (SRS) Flashcards &amp; Gamification</h2>
+<p>A complete learning retention system implemented in <code>FlashcardsPage.tsx</code>, <code>sm2.ts</code>, and <code>streak.ts</code>.</p>
+<h3>10.1 SuperMemo-2 (SM-2) Pure Mathematical Engine</h3>
+<li style="margin-left:0px;">Calculates review intervals (<span class="math">I</span>), repetition counts (<span class="math">n</span>), and ease factors (<span class="math">EF</span> clamped <span class="math">\ge 1.3</span>) based on user recall ratings:</li>
+<li style="margin-left:24px;"><strong>Again (<span class="math">q=0</span>):</strong> Resets interval to 1 day, decrements ease factor.</li>
+<li style="margin-left:24px;"><strong>Hard (<span class="math">q=3</span>):</strong> Advances interval by <span class="math">1.2\times</span>, slightly decreases ease factor.</li>
+<li style="margin-left:24px;"><strong>Good (<span class="math">q=4</span>):</strong> Advances interval by standard <span class="math">EF \times I</span>.</li>
+<li style="margin-left:24px;"><strong>Easy (<span class="math">q=5</span>):</strong> Advances interval by <span class="math">EF \times I \times 1.3</span> bonus multiplier.</li>
+<li style="margin-left:0px;"><strong>Dexie.js Persistence:</strong> Card review states are persisted in the <code>srsCards</code> IndexedDB table. Daily due queues are dynamically calculated based on calendar date stamps.</li>
+<h3>10.2 Gamification &amp; Daily Streaks</h3>
+<li style="margin-left:0px;">Tracks consecutive daily learning activity in IndexedDB.</li>
+<li style="margin-left:0px;"><strong>Streak Freeze Protection:</strong> Provides grace-period protection against accidental streak breaks.</li>
+<li style="margin-left:0px;"><strong>Inactivity Notification Scheduler (<code>notificationScheduler.ts</code>):</strong> Opt-in web notifications reminding users when flashcards are due for review.</li>
+<hr/>
+<h2>11. Curriculum, Case Studies &amp; Staff Mock Interviews</h2>
+<p>Structured pedagogical content stored in <code>/public/content/</code> and accessed via <code>ContentRepository.ts</code>:</p>
+<h3>11.1 Curriculum &amp; Formative Quizzes</h3>
+<li style="margin-left:0px;"><strong>Three Comprehensive Masterclass Courses:</strong></li>
+<li class="ol-item"><strong>1.</strong> <em>Distributed Foundations:</em> Network boundaries, CAP theorem, PACELC theorem, clock drift, and latency propagation.</li>
+<li class="ol-item"><strong>2.</strong> <em>Storage Engines &amp; Partitioning:</em> LSM-tree compaction, B+ tree mechanics, write amplification, and sharding strategies.</li>
+<li class="ol-item"><strong>3.</strong> <em>Traffic Shaping &amp; Resilience:</em> Rate limiters, token buckets, circuit breakers, and load shedding.</li>
+<li style="margin-left:0px;"><strong>Interactive Quiz Runner (<code>QuizRunner.tsx</code>):</strong> Step-by-step multiple choice questions with explanations, instant grading, confetti celebration animations, and IndexedDB score tracking.</li>
+<li style="margin-left:0px;"><strong>Bidirectional Linking:</strong> Every curriculum lesson features direct launch links into its corresponding interactive visualizer, and every visualizer links back to its theory lesson.</li>
+<h3>11.2 Real-World Production Case Studies (<code>cases.json</code>)</h3>
+<p>Deep architectural breakdowns covering functional requirements, non-functional constraints, high-throughput data models, and common interview pitfalls:</p>
+<li style="margin-left:0px;"><strong>Design a Distributed Unique ID Generator:</strong> Twitter Snowflake bit allocation (41-bit timestamp, 10-bit worker ID, 12-bit sequence), NTP backward clock drift mitigation.</li>
+<li style="margin-left:0px;"><strong>Design a Real-Time Collaborative Document Editor:</strong> Operational Transformation (OT) vs. Conflict-Free Replicated Data Types (CRDTs), RGA trees, tombstone garbage collection, WebSocket gateway tier.</li>
+<li style="margin-left:0px;"><strong>Design a Global Distributed Rate Limiter:</strong> Multi-region Redis clusters, sliding window log vs. sliding window counter, fail-open vs. fail-closed edge policies.</li>
+<h3>11.3 Senior Staff Mock Interviews (<code>interview.json</code>)</h3>
+<p>Staff-level trade-off interview scenarios with collapsible senior answers, key architecture rubrics, and trade-off matrices:</p>
+<li style="margin-left:0px;"><strong>Diagnosing anomalous P99 latency spikes</strong> (GC pauses, connection pool starvation, tail amplification across fan-out microservices, hedged request patterns).</li>
+<li style="margin-left:0px;"><strong>Idempotent payment processing API</strong> (<code>POST /v1/charges</code>, atomic <code>SETNX</code> reservation, body hashing, two-phase charge flow).</li>
+<li style="margin-left:0px;"><strong>Split-brain network partition recovery</strong> (strict majority quorums, fencing generation tokens, STONITH fencing).</li>
+<hr/>
+<h2>12. Security, Pro Monetization &amp; Server Infrastructure</h2>
+<p>BluPrnt includes a production-ready Express + TypeScript backend (<code>bluprnt-server/</code>) paired with client-side Pro tier gating (<code>ProPage.tsx</code>).</p>
+<h3>12.1 Pro Tier &amp; Monetization</h3>
+<li style="margin-left:0px;"><strong>Free vs. Pro Tier Matrix:</strong></li>
+<li style="margin-left:24px;"><em>Free Tier:</em> Full access to all 18 algorithm visualizers, calculators, and curriculum; System Design Playground limited to 1 active room with max 3 collaborative participants.</li>
+<li style="margin-left:24px;"><em>Pro Tier:</em> Unlimited collaborative rooms, up to 10 simultaneous participants per room, cloud delta sync, and advanced architecture templates.</li>
+<li style="margin-left:0px;"><strong>Stripe Checkout &amp; Webhook Integration (<code>stripeRoutes.ts</code>):</strong></li>
+<li style="margin-left:24px;">Generates secure Stripe Checkout sessions (<code>/api/stripe/create-checkout-session</code>).</li>
+<li style="margin-left:24px;">Cryptographically verifies Stripe webhook signatures (<code>stripe.webhooks.constructEvent</code>) on <code>/api/stripe/webhook</code>.</li>
+<li style="margin-left:24px;">Authoritative <code>is_pro</code> status is stored server-side with zero client-side trust.</li>
+<li style="margin-left:0px;"><strong>24-Hour HMAC Temporary Unlock Tokens (<code>tokenSigner.ts</code>):</strong></li>
+<li style="margin-left:24px;">Enables temporary offline or promotional Pro access via HMAC-SHA256 signed access tokens with millisecond expiration validation.</li>
+<h3>12.2 Cloud Delta-Sync (<code>syncRoutes.ts</code>)</h3>
+<li style="margin-left:0px;">Client synchronizes local Dexie.js records (designs, flashcards, study progress) to the server via <code>/api/sync/push</code> and <code>/api/sync/pull</code> delta packets, resolving conflicts via client-side timestamps.</li>
+<h3>12.3 Offline PWA (Progressive Web App)</h3>
+<li style="margin-left:0px;"><strong>Service Worker (<code>public/sw.js</code>):</strong> Cache-first strategy for static assets, JavaScript bundles, and JSON curriculum content.</li>
+<li style="margin-left:0px;"><strong>Web App Manifest (<code>public/manifest.json</code>):</strong> Full standalone PWA installability on desktop and mobile platforms.</li>
+<hr/>
+<h2>13. Project Structure &amp; Verification Summary</h2>
+<h3>13.1 Directory Layout</h3>
+<pre><code class="language-">
+bluprnt/
+├── bluprnt-client/                     # Frontend SPA (Vite + React 18 + TS + Tailwind)
+│   ├── public/content/                 # Curriculum, case studies, flashcards, interviews
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── layout/                 # AppShell, Collapsible Sidebar, Theme Toggle
+│   │   │   ├── playground/             # React Flow Canvas, NodePalette, AnimatedEdge,
+│   │   │   │                           # ChaosStudio, Linter, Inspector, Challenges, Collab
+│   │   │   └── simulators/             # Legacy &amp; standalone visualizer components
+│   │   ├── core/
+│   │   │   ├── algorithms/             # M/M/c Queuing, DAG Latency, Linter, SM-2, Sizing
+│   │   │   ├── collab/                 # Yjs CRDT Hook &amp; Awareness bindings
+│   │   │   ├── registry/               # Node Registry (43 components), Machine Tiers
+│   │   │   └── types/                  # Machine Tier &amp; Content type definitions
+│   │   ├── db/                         # Dexie.js IndexedDB schema &amp; migrations
+│   │   ├── pages/                      # Playground, Simulators, Calculators, Cases, etc.
+│   │   ├── simulators/                 # 18 Universal Auto-Streaming Modules &amp; Engines
+│   │   │   ├── components/             # VisualCard, HUD, Debugger, Custom Injector
+│   │   │   ├── engine/                 # Poisson &amp; Bursty TrafficGenerator
+│   │   │   └── modules/                # 18 Domain-Specific Simulation Logic Modules
+│   │   └── tests/                      # 117+ Vitest unit and integration tests
+├── bluprnt-server/                     # Backend API &amp; Real-Time Relay (Express + TS)
+│   └── src/
+│       ├── collab/                     # Yjs WebSocket server &amp; Room Manager
+│       ├── core/                       # HMAC Token Signer &amp; Security
+│       ├── db/                         # Server persistence store
+│       └── routes/                     # Stripe, Collab, and Cloud Sync routes
+├── Dockerfile                          # Unified 1-instance multi-stage production build
+├── render.yaml / railway.json          # Deployment manifests
+└── README.md &amp; PROGRESS.md             # Developer documentation and phase tracking
+</code></pre>
+<h3>13.2 Automated Test Suite Verification</h3>
+<p>The monorepo contains comprehensive automated tests across the algorithmic engines:</p>
+<li style="margin-left:0px;"><code>dagLatency.test.ts</code>: Cycle detection and topological critical-path latency calculation.</li>
+<li style="margin-left:0px;"><code>bottleneck.test.ts</code>: Saturation, dropped RPS, and <span class="math">M/M/c</span> queuing theory math.</li>
+<li style="margin-left:0px;"><code>architectureLinter.test.ts</code>: Reliability scoring, SPOF detection, and missing cache checks.</li>
+<li style="margin-left:0px;"><code>collabBinding.test.ts</code> &amp; <code>collabConvergence.test.ts</code>: Yjs bidirectional binding and multi-client convergence.</li>
+<li style="margin-left:0px;"><code>sm2.test.ts</code>: SuperMemo SM-2 interval and ease factor mathematical stability.</li>
+<li style="margin-left:0px;"><code>trafficGenerator.test.ts</code>: Poisson and bursty traffic distributions, PRNG determinism.</li>
+<li style="margin-left:0px;"><code>simulatorModules.test.ts</code>: Algorithmic state transitions across all 18 simulators.</li>
+<li style="margin-left:0px;"><code>registryDefinitionOfDone.test.ts</code>: Automated compliance verifying all 18 modules implement modes, outcomes, center metrics, and 3 stat tiles.</li>
+<li style="margin-left:0px;"><strong>Verification Status:</strong> <strong>117 passing tests (100% pass rate), 0 TypeScript compilation errors, clean production bundle.</strong></li>
+  </div>
+</body>
+</html>

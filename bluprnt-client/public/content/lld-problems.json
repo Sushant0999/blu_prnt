@@ -1,0 +1,1782 @@
+[
+  {
+    "id": "parking-lot",
+    "title": "Parking Lot System",
+    "difficulty": "easy",
+    "tags": [
+      "oop",
+      "strategy",
+      "factory",
+      "design-patterns"
+    ],
+    "summary": "Design an automated multi-floor parking lot supporting different vehicle types, allocation strategies, ticketing, and dynamic fee calculation.",
+    "requirements": [
+      "Support multiple floors with designated spot types: Compact, Large, Handicapped, Motorcycle, Electric.",
+      "Support multiple vehicle types: Car, Truck, Van, Motorcycle.",
+      "Issue a ticket at entry recording entry time, assigned spot, and vehicle license plate.",
+      "Calculate parking fees at exit based on vehicle type and duration using interchangeable pricing strategies (e.g., hourly, flat rate).",
+      "Display real-time availability boards per floor and spot type."
+    ],
+    "constraints": [
+      "A spot cannot be assigned to more than one active vehicle.",
+      "Vehicle must only park in compatible spots (e.g. Motorcycle in any or motorcycle-only spot; Truck only in Large spot).",
+      "Thread safety for spot allocation should be accounted for in design."
+    ],
+    "hints": [
+      "Separate the concept of a Vehicle from the Spot it occupies. Vehicles have types, and Spots have sizes/types.",
+      "Use the Strategy Pattern for FeeCalculationStrategy so different rates (weekend, holiday, EV charging) can be swapped without modifying the Ticket or ParkingLot class.",
+      "Consider a Factory for creating parking spots and vehicles, or an AllocationStrategy for choosing optimal spots (e.g., closest to entrance, lowest floor first)."
+    ],
+    "keyEntities": [
+      "ParkingLot",
+      "ParkingFloor",
+      "ParkingSpot",
+      "Vehicle",
+      "ParkingTicket",
+      "FeeCalculationStrategy"
+    ],
+    "selfReviewChecklist": [
+      "Did you encapsulate spot allocation logic away from the main ParkingLot facade?",
+      "Can new vehicle or spot types be added without rewriting existing fee calculation logic (Open/Closed Principle)?",
+      "Is fee calculation decoupled via a Strategy interface?",
+      "Does the ParkingTicket capture essential state (ticketId, spotId, entryTime, vehicleId)?"
+    ],
+    "referenceDiagram": {
+      "nodes": {
+        "node_parking_lot": {
+          "id": "node_parking_lot",
+          "position": {
+            "x": 50,
+            "y": 50
+          },
+          "data": {
+            "name": "ParkingLot",
+            "kind": "class",
+            "fields": [
+              {
+                "id": "f1",
+                "visibility": "-",
+                "name": "floors",
+                "type": "List<ParkingFloor>"
+              },
+              {
+                "id": "f2",
+                "visibility": "-",
+                "name": "feeStrategy",
+                "type": "FeeCalculationStrategy"
+              }
+            ],
+            "methods": [
+              {
+                "id": "m1",
+                "visibility": "+",
+                "name": "parkVehicle",
+                "type": "ParkingTicket",
+                "params": "vehicle: Vehicle"
+              },
+              {
+                "id": "m2",
+                "visibility": "+",
+                "name": "unparkVehicle",
+                "type": "double",
+                "params": "ticket: ParkingTicket"
+              }
+            ]
+          }
+        },
+        "node_parking_floor": {
+          "id": "node_parking_floor",
+          "position": {
+            "x": 380,
+            "y": 50
+          },
+          "data": {
+            "name": "ParkingFloor",
+            "kind": "class",
+            "fields": [
+              {
+                "id": "f1",
+                "visibility": "-",
+                "name": "floorNumber",
+                "type": "int"
+              },
+              {
+                "id": "f2",
+                "visibility": "-",
+                "name": "spots",
+                "type": "Map<SpotType, List<ParkingSpot>>"
+              }
+            ],
+            "methods": [
+              {
+                "id": "m1",
+                "visibility": "+",
+                "name": "findAvailableSpot",
+                "type": "ParkingSpot",
+                "params": "type: SpotType"
+              }
+            ]
+          }
+        },
+        "node_parking_spot": {
+          "id": "node_parking_spot",
+          "position": {
+            "x": 700,
+            "y": 50
+          },
+          "data": {
+            "name": "ParkingSpot",
+            "kind": "abstract",
+            "fields": [
+              {
+                "id": "f1",
+                "visibility": "#",
+                "name": "spotId",
+                "type": "String"
+              },
+              {
+                "id": "f2",
+                "visibility": "#",
+                "name": "isOccupied",
+                "type": "boolean"
+              },
+              {
+                "id": "f3",
+                "visibility": "#",
+                "name": "type",
+                "type": "SpotType"
+              }
+            ],
+            "methods": [
+              {
+                "id": "m1",
+                "visibility": "+",
+                "name": "assignVehicle",
+                "type": "void",
+                "params": "vehicle: Vehicle"
+              },
+              {
+                "id": "m2",
+                "visibility": "+",
+                "name": "removeVehicle",
+                "type": "void"
+              }
+            ]
+          }
+        },
+        "node_vehicle": {
+          "id": "node_vehicle",
+          "position": {
+            "x": 700,
+            "y": 350
+          },
+          "data": {
+            "name": "Vehicle",
+            "kind": "abstract",
+            "fields": [
+              {
+                "id": "f1",
+                "visibility": "#",
+                "name": "licensePlate",
+                "type": "String"
+              },
+              {
+                "id": "f2",
+                "visibility": "#",
+                "name": "type",
+                "type": "VehicleType"
+              }
+            ],
+            "methods": [
+              {
+                "id": "m1",
+                "visibility": "+",
+                "name": "getType",
+                "type": "VehicleType"
+              }
+            ]
+          }
+        },
+        "node_parking_ticket": {
+          "id": "node_parking_ticket",
+          "position": {
+            "x": 50,
+            "y": 350
+          },
+          "data": {
+            "name": "ParkingTicket",
+            "kind": "class",
+            "fields": [
+              {
+                "id": "f1",
+                "visibility": "-",
+                "name": "ticketId",
+                "type": "String"
+              },
+              {
+                "id": "f2",
+                "visibility": "-",
+                "name": "entryTime",
+                "type": "Date"
+              },
+              {
+                "id": "f3",
+                "visibility": "-",
+                "name": "exitTime",
+                "type": "Date"
+              },
+              {
+                "id": "f4",
+                "visibility": "-",
+                "name": "spotId",
+                "type": "String"
+              },
+              {
+                "id": "f5",
+                "visibility": "-",
+                "name": "vehicle",
+                "type": "Vehicle"
+              }
+            ],
+            "methods": [
+              {
+                "id": "m1",
+                "visibility": "+",
+                "name": "calculateDurationHours",
+                "type": "double"
+              }
+            ]
+          }
+        },
+        "node_fee_strategy": {
+          "id": "node_fee_strategy",
+          "position": {
+            "x": 380,
+            "y": 350
+          },
+          "data": {
+            "name": "FeeCalculationStrategy",
+            "kind": "interface",
+            "fields": [],
+            "methods": [
+              {
+                "id": "m1",
+                "visibility": "+",
+                "name": "calculateFee",
+                "type": "double",
+                "params": "ticket: ParkingTicket"
+              }
+            ]
+          }
+        }
+      },
+      "edges": {
+        "e1": {
+          "id": "e1",
+          "source": "node_parking_lot",
+          "target": "node_parking_floor",
+          "data": {
+            "kind": "composition",
+            "sourceMultiplicity": "1",
+            "targetMultiplicity": "1..*"
+          }
+        },
+        "e2": {
+          "id": "e2",
+          "source": "node_parking_floor",
+          "target": "node_parking_spot",
+          "data": {
+            "kind": "composition",
+            "sourceMultiplicity": "1",
+            "targetMultiplicity": "0..*"
+          }
+        },
+        "e3": {
+          "id": "e3",
+          "source": "node_parking_lot",
+          "target": "node_fee_strategy",
+          "data": {
+            "kind": "aggregation",
+            "sourceMultiplicity": "1",
+            "targetMultiplicity": "1"
+          }
+        },
+        "e4": {
+          "id": "e4",
+          "source": "node_parking_lot",
+          "target": "node_parking_ticket",
+          "data": {
+            "kind": "association",
+            "label": "issues"
+          }
+        },
+        "e5": {
+          "id": "e5",
+          "source": "node_parking_ticket",
+          "target": "node_vehicle",
+          "data": {
+            "kind": "association",
+            "sourceMultiplicity": "1",
+            "targetMultiplicity": "1"
+          }
+        },
+        "e6": {
+          "id": "e6",
+          "source": "node_parking_spot",
+          "target": "node_vehicle",
+          "data": {
+            "kind": "association",
+            "label": "parks",
+            "sourceMultiplicity": "0..1",
+            "targetMultiplicity": "0..1"
+          }
+        }
+      }
+    },
+    "referenceNotes": "### Parking Lot Architectural Rationale\n\n1. **Composition over Aggregation**: Floors belong strictly to the Parking Lot and Spots belong strictly to their floor.\n2. **Strategy Pattern for Fees**: `FeeCalculationStrategy` permits hourly, flat-rate, or surge pricing without modifying the ticket or parking lot core.\n3. **Single Responsibility**: `ParkingLot` acts as the Facade managing tickets and top-level flows, while `ParkingFloor` handles spatial search for free spots.",
+    "relatedPatternIds": [
+      "strategy",
+      "factory-method"
+    ],
+    "commonMistakes": [
+      "Hardcoding fee calculation formulas inside the Ticket or ParkingLot class.",
+      "Making Vehicle inherit from ParkingSpot or vice-versa.",
+      "Allowing Spot allocation without synchronization or atomic state transitions."
+    ]
+  },
+  {
+    "id": "lru-cache",
+    "title": "LRU Cache",
+    "difficulty": "easy",
+    "tags": [
+      "oop",
+      "data-structures",
+      "cache"
+    ],
+    "summary": "Design a fast Least Recently Used (LRU) Cache supporting get and put in O(1) time complexity with automatic capacity eviction.",
+    "requirements": [
+      "Initialize cache with positive integer capacity.",
+      "get(key): Return value of key if exists, else -1 or null. Marks key as most recently used.",
+      "put(key, value): Update value if key exists, otherwise insert key-value pair.",
+      "When cache exceeds capacity, evict the least recently used key prior to insertion.",
+      "All get and put operations must run in O(1) average time complexity."
+    ],
+    "constraints": [
+      "O(1) time complexity requires combining a Hash Map with a Doubly Linked List.",
+      "Must correctly update pointers when moving nodes to head or evicting from tail."
+    ],
+    "hints": [
+      "A Doubly Linked List provides O(1) removal of an arbitrary node if you already hold its reference.",
+      "A Hash Map maps keys directly to DoublyLinkedListNode objects, providing O(1) lookups.",
+      "Use dummy head and tail sentinel nodes to eliminate null checks when adding and removing nodes."
+    ],
+    "keyEntities": [
+      "LRUCache",
+      "DoublyLinkedList",
+      "CacheNode"
+    ],
+    "selfReviewChecklist": [
+      "Did you use sentinel head and tail nodes to simplify edge cases?",
+      "Does get() move the accessed node to the most recent position?",
+      "Does put() update an existing key in-place and reposition it?",
+      "Is the Hash Map updated whenever a node is evicted from the list?"
+    ],
+    "referenceDiagram": {
+      "nodes": {
+        "node_lru_cache": {
+          "id": "node_lru_cache",
+          "position": {
+            "x": 50,
+            "y": 100
+          },
+          "data": {
+            "name": "LRUCache",
+            "kind": "class",
+            "fields": [
+              {
+                "id": "f1",
+                "visibility": "-",
+                "name": "capacity",
+                "type": "int"
+              },
+              {
+                "id": "f2",
+                "visibility": "-",
+                "name": "nodeMap",
+                "type": "Map<K, CacheNode<K, V>>"
+              },
+              {
+                "id": "f3",
+                "visibility": "-",
+                "name": "list",
+                "type": "DoublyLinkedList<K, V>"
+              }
+            ],
+            "methods": [
+              {
+                "id": "m1",
+                "visibility": "+",
+                "name": "get",
+                "type": "V",
+                "params": "key: K"
+              },
+              {
+                "id": "m2",
+                "visibility": "+",
+                "name": "put",
+                "type": "void",
+                "params": "key: K, value: V"
+              }
+            ]
+          }
+        },
+        "node_doubly_linked_list": {
+          "id": "node_doubly_linked_list",
+          "position": {
+            "x": 420,
+            "y": 100
+          },
+          "data": {
+            "name": "DoublyLinkedList",
+            "kind": "class",
+            "fields": [
+              {
+                "id": "f1",
+                "visibility": "-",
+                "name": "head",
+                "type": "CacheNode<K, V>"
+              },
+              {
+                "id": "f2",
+                "visibility": "-",
+                "name": "tail",
+                "type": "CacheNode<K, V>"
+              },
+              {
+                "id": "f3",
+                "visibility": "-",
+                "name": "size",
+                "type": "int"
+              }
+            ],
+            "methods": [
+              {
+                "id": "m1",
+                "visibility": "+",
+                "name": "addToHead",
+                "type": "void",
+                "params": "node: CacheNode<K, V>"
+              },
+              {
+                "id": "m2",
+                "visibility": "+",
+                "name": "removeNode",
+                "type": "void",
+                "params": "node: CacheNode<K, V>"
+              },
+              {
+                "id": "m3",
+                "visibility": "+",
+                "name": "removeTail",
+                "type": "CacheNode<K, V>"
+              }
+            ]
+          }
+        },
+        "node_cache_node": {
+          "id": "node_cache_node",
+          "position": {
+            "x": 750,
+            "y": 100
+          },
+          "data": {
+            "name": "CacheNode",
+            "kind": "class",
+            "fields": [
+              {
+                "id": "f1",
+                "visibility": "+",
+                "name": "key",
+                "type": "K"
+              },
+              {
+                "id": "f2",
+                "visibility": "+",
+                "name": "val",
+                "type": "V"
+              },
+              {
+                "id": "f3",
+                "visibility": "+",
+                "name": "prev",
+                "type": "CacheNode<K, V>"
+              },
+              {
+                "id": "f4",
+                "visibility": "+",
+                "name": "next",
+                "type": "CacheNode<K, V>"
+              }
+            ],
+            "methods": []
+          }
+        }
+      },
+      "edges": {
+        "e1": {
+          "id": "e1",
+          "source": "node_lru_cache",
+          "target": "node_doubly_linked_list",
+          "data": {
+            "kind": "composition",
+            "sourceMultiplicity": "1",
+            "targetMultiplicity": "1"
+          }
+        },
+        "e2": {
+          "id": "e2",
+          "source": "node_doubly_linked_list",
+          "target": "node_cache_node",
+          "data": {
+            "kind": "association",
+            "label": "links",
+            "sourceMultiplicity": "1",
+            "targetMultiplicity": "0..*"
+          }
+        },
+        "e3": {
+          "id": "e3",
+          "source": "node_lru_cache",
+          "target": "node_cache_node",
+          "data": {
+            "kind": "association",
+            "label": "indexes",
+            "sourceMultiplicity": "1",
+            "targetMultiplicity": "0..*"
+          }
+        }
+      }
+    },
+    "referenceNotes": "### LRU Cache Design Key Points\n\n- **Map + Doubly Linked List**: Hash map alone cannot order elements in O(1) move time; list alone cannot find elements in O(1). Together they achieve O(1) get, put, and eviction.\n- **Sentinel Nodes**: Using dummy head and tail simplifies boundary conditions so insertion at head and deletion at tail never encounter null references.",
+    "relatedPatternIds": [],
+    "commonMistakes": [
+      "Using a single-linked list, which requires O(N) to delete a middle node because you cannot access prev.",
+      "Forgetting to store both key AND value inside CacheNode (key is required to delete from the Map during tail eviction).",
+      "Failing to update eviction ordering when calling get()."
+    ]
+  },
+  {
+    "id": "vending-machine",
+    "title": "Vending Machine",
+    "difficulty": "medium",
+    "tags": [
+      "oop",
+      "state",
+      "strategy",
+      "design-patterns"
+    ],
+    "summary": "Design an automated vending machine handling inventory, coin/cash collection, product dispensing, change calculation, and refund workflows.",
+    "requirements": [
+      "Support states: Idle/NoCoin, HasCoin/Selection, Dispensing, SoldOut.",
+      "Accept multiple coin denominations (1, 5, 10, 25 cents, notes).",
+      "Allow user to select an item by code. Validate funds and inventory.",
+      "Dispense item, deduct inventory, and return change.",
+      "Allow user to cancel transaction and receive full refund prior to dispensing."
+    ],
+    "constraints": [
+      "State transitions must follow legal flows (e.g. cannot dispense without coins).",
+      "Change must be calculated accurately from available cash inventory; if exact change cannot be provided, cancel and refund."
+    ],
+    "hints": [
+      "Use the State Pattern: Define a VendingMachineState interface with methods like insertCoin, selectItem, dispense, refund.",
+      "Represent distinct state classes: IdleState, HasCoinState, DispensingState, SoldOutState.",
+      "Encapsulate coin change calculation with a Greedy or Dynamic Programming change strategy."
+    ],
+    "keyEntities": [
+      "VendingMachine",
+      "VendingMachineState",
+      "Inventory",
+      "Item",
+      "Coin",
+      "CoinChangeCalculator"
+    ],
+    "selfReviewChecklist": [
+      "Are machine states represented as polymorphic classes instead of massive switch-case statements?",
+      "Does VendingMachine delegate user actions directly to the currentState?",
+      "Is item inventory separated from payment balance state?",
+      "Does cancellation safely return inserted funds?"
+    ],
+    "referenceDiagram": {
+      "nodes": {
+        "node_vm": {
+          "id": "node_vm",
+          "position": {
+            "x": 50,
+            "y": 150
+          },
+          "data": {
+            "name": "VendingMachine",
+            "kind": "class",
+            "fields": [
+              {
+                "id": "f1",
+                "visibility": "-",
+                "name": "currentState",
+                "type": "VendingMachineState"
+              },
+              {
+                "id": "f2",
+                "visibility": "-",
+                "name": "inventory",
+                "type": "Inventory"
+              },
+              {
+                "id": "f3",
+                "visibility": "-",
+                "name": "currentBalance",
+                "type": "int"
+              },
+              {
+                "id": "f4",
+                "visibility": "-",
+                "name": "selectedItemCode",
+                "type": "String"
+              }
+            ],
+            "methods": [
+              {
+                "id": "m1",
+                "visibility": "+",
+                "name": "setState",
+                "type": "void",
+                "params": "state: VendingMachineState"
+              },
+              {
+                "id": "m2",
+                "visibility": "+",
+                "name": "insertCoin",
+                "type": "void",
+                "params": "coin: Coin"
+              },
+              {
+                "id": "m3",
+                "visibility": "+",
+                "name": "selectItem",
+                "type": "void",
+                "params": "code: String"
+              },
+              {
+                "id": "m4",
+                "visibility": "+",
+                "name": "dispense",
+                "type": "void"
+              },
+              {
+                "id": "m5",
+                "visibility": "+",
+                "name": "cancelAndRefund",
+                "type": "List<Coin>"
+              }
+            ]
+          }
+        },
+        "node_vm_state": {
+          "id": "node_vm_state",
+          "position": {
+            "x": 420,
+            "y": 50
+          },
+          "data": {
+            "name": "VendingMachineState",
+            "kind": "interface",
+            "fields": [],
+            "methods": [
+              {
+                "id": "m1",
+                "visibility": "+",
+                "name": "insertCoin",
+                "type": "void",
+                "params": "vm: VendingMachine, coin: Coin"
+              },
+              {
+                "id": "m2",
+                "visibility": "+",
+                "name": "selectItem",
+                "type": "void",
+                "params": "vm: VendingMachine, code: String"
+              },
+              {
+                "id": "m3",
+                "visibility": "+",
+                "name": "dispense",
+                "type": "void",
+                "params": "vm: VendingMachine"
+              },
+              {
+                "id": "m4",
+                "visibility": "+",
+                "name": "cancel",
+                "type": "List<Coin>",
+                "params": "vm: VendingMachine"
+              }
+            ]
+          }
+        },
+        "node_idle_state": {
+          "id": "node_idle_state",
+          "position": {
+            "x": 300,
+            "y": 260
+          },
+          "data": {
+            "name": "IdleState",
+            "kind": "class",
+            "fields": [],
+            "methods": [
+              {
+                "id": "m1",
+                "visibility": "+",
+                "name": "insertCoin",
+                "type": "void",
+                "params": "vm: VendingMachine, coin: Coin"
+              }
+            ]
+          }
+        },
+        "node_has_coin_state": {
+          "id": "node_has_coin_state",
+          "position": {
+            "x": 500,
+            "y": 260
+          },
+          "data": {
+            "name": "HasCoinState",
+            "kind": "class",
+            "fields": [],
+            "methods": [
+              {
+                "id": "m1",
+                "visibility": "+",
+                "name": "selectItem",
+                "type": "void",
+                "params": "vm: VendingMachine, code: String"
+              },
+              {
+                "id": "m2",
+                "visibility": "+",
+                "name": "cancel",
+                "type": "List<Coin>",
+                "params": "vm: VendingMachine"
+              }
+            ]
+          }
+        },
+        "node_dispense_state": {
+          "id": "node_dispense_state",
+          "position": {
+            "x": 700,
+            "y": 260
+          },
+          "data": {
+            "name": "DispensingState",
+            "kind": "class",
+            "fields": [],
+            "methods": [
+              {
+                "id": "m1",
+                "visibility": "+",
+                "name": "dispense",
+                "type": "void",
+                "params": "vm: VendingMachine"
+              }
+            ]
+          }
+        },
+        "node_inventory": {
+          "id": "node_inventory",
+          "position": {
+            "x": 50,
+            "y": 440
+          },
+          "data": {
+            "name": "Inventory",
+            "kind": "class",
+            "fields": [
+              {
+                "id": "f1",
+                "visibility": "-",
+                "name": "itemStock",
+                "type": "Map<String, Integer>"
+              },
+              {
+                "id": "f2",
+                "visibility": "-",
+                "name": "itemDetails",
+                "type": "Map<String, Item>"
+              }
+            ],
+            "methods": [
+              {
+                "id": "m1",
+                "visibility": "+",
+                "name": "deductStock",
+                "type": "void",
+                "params": "code: String"
+              },
+              {
+                "id": "m2",
+                "visibility": "+",
+                "name": "isAvailable",
+                "type": "boolean",
+                "params": "code: String"
+              }
+            ]
+          }
+        }
+      },
+      "edges": {
+        "e1": {
+          "id": "e1",
+          "source": "node_vm",
+          "target": "node_vm_state",
+          "data": {
+            "kind": "aggregation",
+            "sourceMultiplicity": "1",
+            "targetMultiplicity": "1"
+          }
+        },
+        "e2": {
+          "id": "e2",
+          "source": "node_idle_state",
+          "target": "node_vm_state",
+          "data": {
+            "kind": "implementation"
+          }
+        },
+        "e3": {
+          "id": "e3",
+          "source": "node_has_coin_state",
+          "target": "node_vm_state",
+          "data": {
+            "kind": "implementation"
+          }
+        },
+        "e4": {
+          "id": "e4",
+          "source": "node_dispense_state",
+          "target": "node_vm_state",
+          "data": {
+            "kind": "implementation"
+          }
+        },
+        "e5": {
+          "id": "e5",
+          "source": "node_vm",
+          "target": "node_inventory",
+          "data": {
+            "kind": "composition",
+            "sourceMultiplicity": "1",
+            "targetMultiplicity": "1"
+          }
+        }
+      }
+    },
+    "referenceNotes": "### State Pattern Implementation in Vending Machine\n\n- The State Pattern encapsulates valid and invalid transitions cleanly.\n- In `IdleState`, attempting to dispense throws an IllegalStateException.\n- Once coins are accepted, transitioning to `HasCoinState` enables selection and cancellation.\n- `Inventory` manages quantity tracking independent of vending mechanics.",
+    "relatedPatternIds": [
+      "state",
+      "strategy"
+    ],
+    "commonMistakes": [
+      "Using an enum for State with huge switch-case statements inside VendingMachine (violates OCP).",
+      "Allowing item dispensing directly from HasCoinState without verifying inventory.",
+      "Losing coin balance when transaction is aborted."
+    ]
+  },
+  {
+    "id": "splitwise",
+    "title": "Splitwise / Expense Sharing App",
+    "difficulty": "medium",
+    "tags": [
+      "oop",
+      "strategy",
+      "observer",
+      "finance"
+    ],
+    "summary": "Design an expense sharing system supporting user groups, varied split strategies (equal, exact, percentage), balance tracking, and debt simplification.",
+    "requirements": [
+      "Users can add expenses within a group or directly with other users.",
+      "Support multiple split types: EQUAL, EXACT, PERCENTAGE.",
+      "Track who owes whom with directional balance balances.",
+      "Provide a simplify debts algorithm (minimize transactions between parties).",
+      "Send notifications to involved users when an expense is recorded or settled."
+    ],
+    "constraints": [
+      "Split total must exactly equal the total expense amount (for PERCENTAGE: total percentages must equal 100%).",
+      "Debt simplification must maintain net individual balances."
+    ],
+    "hints": [
+      "Use the Strategy Pattern for ExpenseSplitStrategy (EqualSplitStrategy, ExactSplitStrategy, PercentageSplitStrategy).",
+      "Use the Observer Pattern to notify users when an expense is added or modified.",
+      "Represent debt balances as directional edges in a graph or as a net balance map."
+    ],
+    "keyEntities": [
+      "User",
+      "Group",
+      "Expense",
+      "Split",
+      "ExpenseSplitStrategy",
+      "BalanceSheetController"
+    ],
+    "selfReviewChecklist": [
+      "Is validation of splits decoupled into respective Strategy classes?",
+      "Does the system handle precision issues (e.g. 100 / 3 = 33.33, 33.33, 33.34)?",
+      "Are users notified of balance updates using Observer/Listeners?",
+      "Can new split types (e.g. shares/ratios) be added without modifying existing code?"
+    ],
+    "referenceDiagram": {
+      "nodes": {
+        "node_user": {
+          "id": "node_user",
+          "position": {
+            "x": 50,
+            "y": 50
+          },
+          "data": {
+            "name": "User",
+            "kind": "class",
+            "fields": [
+              {
+                "id": "f1",
+                "visibility": "-",
+                "name": "userId",
+                "type": "String"
+              },
+              {
+                "id": "f2",
+                "visibility": "-",
+                "name": "name",
+                "type": "String"
+              },
+              {
+                "id": "f3",
+                "visibility": "-",
+                "name": "email",
+                "type": "String"
+              }
+            ],
+            "methods": [
+              {
+                "id": "m1",
+                "visibility": "+",
+                "name": "updateNotification",
+                "type": "void",
+                "params": "msg: String"
+              }
+            ]
+          }
+        },
+        "node_group": {
+          "id": "node_group",
+          "position": {
+            "x": 380,
+            "y": 50
+          },
+          "data": {
+            "name": "Group",
+            "kind": "class",
+            "fields": [
+              {
+                "id": "f1",
+                "visibility": "-",
+                "name": "groupId",
+                "type": "String"
+              },
+              {
+                "id": "f2",
+                "visibility": "-",
+                "name": "members",
+                "type": "List<User>"
+              },
+              {
+                "id": "f3",
+                "visibility": "-",
+                "name": "expenses",
+                "type": "List<Expense>"
+              }
+            ],
+            "methods": [
+              {
+                "id": "m1",
+                "visibility": "+",
+                "name": "addExpense",
+                "type": "void",
+                "params": "expense: Expense"
+              }
+            ]
+          }
+        },
+        "node_expense": {
+          "id": "node_expense",
+          "position": {
+            "x": 380,
+            "y": 300
+          },
+          "data": {
+            "name": "Expense",
+            "kind": "class",
+            "fields": [
+              {
+                "id": "f1",
+                "visibility": "-",
+                "name": "expenseId",
+                "type": "String"
+              },
+              {
+                "id": "f2",
+                "visibility": "-",
+                "name": "amount",
+                "type": "double"
+              },
+              {
+                "id": "f3",
+                "visibility": "-",
+                "name": "paidBy",
+                "type": "User"
+              },
+              {
+                "id": "f4",
+                "visibility": "-",
+                "name": "splits",
+                "type": "List<Split>"
+              }
+            ],
+            "methods": [
+              {
+                "id": "m1",
+                "visibility": "+",
+                "name": "validate",
+                "type": "boolean"
+              }
+            ]
+          }
+        },
+        "node_split": {
+          "id": "node_split",
+          "position": {
+            "x": 50,
+            "y": 300
+          },
+          "data": {
+            "name": "Split",
+            "kind": "abstract",
+            "fields": [
+              {
+                "id": "f1",
+                "visibility": "#",
+                "name": "user",
+                "type": "User"
+              },
+              {
+                "id": "f2",
+                "visibility": "#",
+                "name": "amountOwed",
+                "type": "double"
+              }
+            ],
+            "methods": []
+          }
+        },
+        "node_split_strategy": {
+          "id": "node_split_strategy",
+          "position": {
+            "x": 700,
+            "y": 300
+          },
+          "data": {
+            "name": "ExpenseSplitStrategy",
+            "kind": "interface",
+            "fields": [],
+            "methods": [
+              {
+                "id": "m1",
+                "visibility": "+",
+                "name": "calculateSplits",
+                "type": "List<Split>",
+                "params": "total: double, splits: List<Split>"
+              }
+            ]
+          }
+        }
+      },
+      "edges": {
+        "e1": {
+          "id": "e1",
+          "source": "node_group",
+          "target": "node_user",
+          "data": {
+            "kind": "aggregation",
+            "sourceMultiplicity": "1",
+            "targetMultiplicity": "1..*"
+          }
+        },
+        "e2": {
+          "id": "e2",
+          "source": "node_group",
+          "target": "node_expense",
+          "data": {
+            "kind": "composition",
+            "sourceMultiplicity": "1",
+            "targetMultiplicity": "0..*"
+          }
+        },
+        "e3": {
+          "id": "e3",
+          "source": "node_expense",
+          "target": "node_split",
+          "data": {
+            "kind": "composition",
+            "sourceMultiplicity": "1",
+            "targetMultiplicity": "1..*"
+          }
+        },
+        "e4": {
+          "id": "e4",
+          "source": "node_expense",
+          "target": "node_split_strategy",
+          "data": {
+            "kind": "aggregation",
+            "sourceMultiplicity": "1",
+            "targetMultiplicity": "1"
+          }
+        },
+        "e5": {
+          "id": "e5",
+          "source": "node_split",
+          "target": "node_user",
+          "data": {
+            "kind": "association",
+            "sourceMultiplicity": "1",
+            "targetMultiplicity": "1"
+          }
+        }
+      }
+    },
+    "referenceNotes": "### Splitwise Architectural Choices\n\n- **Strategy Pattern for Splits**: Different types of splits (Equal, Exact, Percentage) have distinct validation and mathematical rules.\n- **Observer Pattern for Updates**: When an expense is recorded in a Group, all users referenced in the splits are notified.\n- **Balance Settlement**: Balances can be tracked in a `BalanceSheetController` as a bipartite graph of debts and simplified via greedy min-cash-flow algorithms.",
+    "relatedPatternIds": [
+      "strategy",
+      "observer"
+    ],
+    "commonMistakes": [
+      "Rounding issues when dividing odd figures (e.g. $10 among 3 people).",
+      "Coupling expense persistence directly with individual user classes.",
+      "Failing to support expenses between individuals outside of a formal group."
+    ]
+  },
+  {
+    "id": "elevator-system",
+    "title": "Elevator Control System",
+    "difficulty": "hard",
+    "tags": [
+      "oop",
+      "state",
+      "strategy",
+      "command",
+      "concurrency"
+    ],
+    "summary": "Design an intelligent elevator dispatch system controlling multiple elevator cars, handling internal floor selections, external hallway calls, and scheduling optimization.",
+    "requirements": [
+      "Manage multiple elevator cars across N floors.",
+      "Handle internal requests (passenger selects floor inside car) and external requests (passenger presses UP/DOWN in hallway).",
+      "Elevator states: MOVING_UP, MOVING_DOWN, IDLE, MAINTENANCE, DOORS_OPEN.",
+      "Dispatcher algorithm (SCAN/LOOK or nearest car strategy) to assign cars efficiently.",
+      "Safety mechanisms: emergency stop, overload sensor detection."
+    ],
+    "constraints": [
+      "Direction changes should prevent starvation of passengers in opposing directions.",
+      "Dispatcher should allocate the most optimal car (e.g. idle car on floor or car already moving in matching direction)."
+    ],
+    "hints": [
+      "Model ElevatorCar with a State pattern representing its motion and door state.",
+      "Represent button presses as Commands or Requests, queued inside ElevatorController or Dispatcher.",
+      "Use the Strategy Pattern for scheduling: LOOK / SCAN / Nearest Car."
+    ],
+    "keyEntities": [
+      "ElevatorSystem",
+      "ElevatorController",
+      "ElevatorCar",
+      "ElevatorState",
+      "ElevatorDirection",
+      "Request",
+      "DispatchStrategy"
+    ],
+    "selfReviewChecklist": [
+      "Did you decouple internal car buttons from external hall call panels?",
+      "Is car motion and door handling modeled as a state machine?",
+      "Can dispatch algorithms be swapped via a Strategy interface?",
+      "How are multiple concurrent button presses synchronized?"
+    ],
+    "referenceDiagram": {
+      "nodes": {
+        "node_elevator_system": {
+          "id": "node_elevator_system",
+          "position": {
+            "x": 50,
+            "y": 100
+          },
+          "data": {
+            "name": "ElevatorSystem",
+            "kind": "class",
+            "fields": [
+              {
+                "id": "f1",
+                "visibility": "-",
+                "name": "controllers",
+                "type": "List<ElevatorController>"
+              },
+              {
+                "id": "f2",
+                "visibility": "-",
+                "name": "dispatchStrategy",
+                "type": "DispatchStrategy"
+              }
+            ],
+            "methods": [
+              {
+                "id": "m1",
+                "visibility": "+",
+                "name": "handleHallRequest",
+                "type": "void",
+                "params": "floor: int, dir: Direction"
+              }
+            ]
+          }
+        },
+        "node_dispatch_strategy": {
+          "id": "node_dispatch_strategy",
+          "position": {
+            "x": 50,
+            "y": 350
+          },
+          "data": {
+            "name": "DispatchStrategy",
+            "kind": "interface",
+            "fields": [],
+            "methods": [
+              {
+                "id": "m1",
+                "visibility": "+",
+                "name": "selectCar",
+                "type": "ElevatorController",
+                "params": "req: Request, cars: List<ElevatorController>"
+              }
+            ]
+          }
+        },
+        "node_elevator_controller": {
+          "id": "node_elevator_controller",
+          "position": {
+            "x": 400,
+            "y": 100
+          },
+          "data": {
+            "name": "ElevatorController",
+            "kind": "class",
+            "fields": [
+              {
+                "id": "f1",
+                "visibility": "-",
+                "name": "car",
+                "type": "ElevatorCar"
+              },
+              {
+                "id": "f2",
+                "visibility": "-",
+                "name": "upRequests",
+                "type": "TreeSet<Integer>"
+              },
+              {
+                "id": "f3",
+                "visibility": "-",
+                "name": "downRequests",
+                "type": "TreeSet<Integer>"
+              }
+            ],
+            "methods": [
+              {
+                "id": "m1",
+                "visibility": "+",
+                "name": "enqueueDestination",
+                "type": "void",
+                "params": "floor: int"
+              },
+              {
+                "id": "m2",
+                "visibility": "+",
+                "name": "stepSimulation",
+                "type": "void"
+              }
+            ]
+          }
+        },
+        "node_elevator_car": {
+          "id": "node_elevator_car",
+          "position": {
+            "x": 750,
+            "y": 100
+          },
+          "data": {
+            "name": "ElevatorCar",
+            "kind": "class",
+            "fields": [
+              {
+                "id": "f1",
+                "visibility": "-",
+                "name": "id",
+                "type": "int"
+              },
+              {
+                "id": "f2",
+                "visibility": "-",
+                "name": "currentFloor",
+                "type": "int"
+              },
+              {
+                "id": "f3",
+                "visibility": "-",
+                "name": "state",
+                "type": "ElevatorState"
+              },
+              {
+                "id": "f4",
+                "visibility": "-",
+                "name": "direction",
+                "type": "Direction"
+              }
+            ],
+            "methods": [
+              {
+                "id": "m1",
+                "visibility": "+",
+                "name": "moveUp",
+                "type": "void"
+              },
+              {
+                "id": "m2",
+                "visibility": "+",
+                "name": "moveDown",
+                "type": "void"
+              },
+              {
+                "id": "m3",
+                "visibility": "+",
+                "name": "openDoors",
+                "type": "void"
+              }
+            ]
+          }
+        }
+      },
+      "edges": {
+        "e1": {
+          "id": "e1",
+          "source": "node_elevator_system",
+          "target": "node_elevator_controller",
+          "data": {
+            "kind": "composition",
+            "sourceMultiplicity": "1",
+            "targetMultiplicity": "1..*"
+          }
+        },
+        "e2": {
+          "id": "e2",
+          "source": "node_elevator_system",
+          "target": "node_dispatch_strategy",
+          "data": {
+            "kind": "aggregation",
+            "sourceMultiplicity": "1",
+            "targetMultiplicity": "1"
+          }
+        },
+        "e3": {
+          "id": "e3",
+          "source": "node_elevator_controller",
+          "target": "node_elevator_car",
+          "data": {
+            "kind": "composition",
+            "sourceMultiplicity": "1",
+            "targetMultiplicity": "1"
+          }
+        }
+      }
+    },
+    "referenceNotes": "### Elevator System Design Notes\n\n- **Controller vs Car**: Separate the physical hardware state (`ElevatorCar`) from its decision making and request queue (`ElevatorController`).\n- **Dispatch Strategy**: Hall calls are assigned to the most appropriate car via `DispatchStrategy` (e.g. elevator closest and heading toward caller).\n- **Dual Priority Queues / TreeSets**: LOOK scheduling uses two sorted sets: floors above for the upward sweep, and floors below for downward.",
+    "relatedPatternIds": [
+      "state",
+      "strategy",
+      "command"
+    ],
+    "commonMistakes": [
+      "Letting the Car itself coordinate the entire building's hallway calls.",
+      "Neglecting passenger direction when dispatching cars (leading to unnecessary stops).",
+      "Not handling concurrent internal and external requests."
+    ]
+  },
+  {
+    "id": "book-my-show",
+    "title": "BookMyShow / Movie Booking System",
+    "difficulty": "hard",
+    "tags": [
+      "oop",
+      "concurrency",
+      "state",
+      "observer",
+      "factory"
+    ],
+    "summary": "Design a movie ticket reservation platform managing cinemas, halls, screens, shows, seat layouts, temporary locks, and payment processing.",
+    "requirements": [
+      "List cities, cinemas/theatres, screens, and scheduled shows for movies.",
+      "Users select seats for a specific show.",
+      "Temporarily lock chosen seats for 10 minutes during checkout to avoid double booking.",
+      "Confirm booking upon successful payment; release seat lock if payment fails or timeout occurs.",
+      "Send notifications with ticket confirmation (Email/SMS)."
+    ],
+    "constraints": [
+      "Two users must never be able to book or simultaneously hold the exact same seat.",
+      "Seat locks must have a deterministic TTL (Time To Live)."
+    ],
+    "hints": [
+      "Distinguish between a physical Seat (ScreenSeat: Row A, Col 1) and a ShowSeat (Seat status specific to a Show: Available, Locked, Booked).",
+      "Use State Pattern or explicit status enum for ShowSeat: AVAILABLE, TEMPORARILY_LOCKED, BOOKED.",
+      "SeatLockService can manage lock expiry with timestamps or scheduled timers.",
+      "Observer pattern notifies payment gateway and user notification services."
+    ],
+    "keyEntities": [
+      "Cinema",
+      "Screen",
+      "Movie",
+      "Show",
+      "Seat",
+      "ShowSeat",
+      "Booking",
+      "SeatLockService",
+      "Payment"
+    ],
+    "selfReviewChecklist": [
+      "Did you decouple physical theater seats from per-show seat booking state?",
+      "Is there a designated mechanism/service to lock seats temporarily during checkout?",
+      "Are booking states (Created, PendingPayment, Confirmed, Expired) cleanly defined?",
+      "Does booking confirmation release locks and update ShowSeat status atomically?"
+    ],
+    "referenceDiagram": {
+      "nodes": {
+        "node_cinema": {
+          "id": "node_cinema",
+          "position": {
+            "x": 50,
+            "y": 50
+          },
+          "data": {
+            "name": "Cinema",
+            "kind": "class",
+            "fields": [
+              {
+                "id": "f1",
+                "visibility": "-",
+                "name": "cinemaId",
+                "type": "String"
+              },
+              {
+                "id": "f2",
+                "visibility": "-",
+                "name": "city",
+                "type": "String"
+              },
+              {
+                "id": "f3",
+                "visibility": "-",
+                "name": "screens",
+                "type": "List<Screen>"
+              }
+            ],
+            "methods": []
+          }
+        },
+        "node_screen": {
+          "id": "node_screen",
+          "position": {
+            "x": 380,
+            "y": 50
+          },
+          "data": {
+            "name": "Screen",
+            "kind": "class",
+            "fields": [
+              {
+                "id": "f1",
+                "visibility": "-",
+                "name": "screenId",
+                "type": "String"
+              },
+              {
+                "id": "f2",
+                "visibility": "-",
+                "name": "physicalSeats",
+                "type": "List<Seat>"
+              }
+            ],
+            "methods": []
+          }
+        },
+        "node_show": {
+          "id": "node_show",
+          "position": {
+            "x": 700,
+            "y": 50
+          },
+          "data": {
+            "name": "Show",
+            "kind": "class",
+            "fields": [
+              {
+                "id": "f1",
+                "visibility": "-",
+                "name": "showId",
+                "type": "String"
+              },
+              {
+                "id": "f2",
+                "visibility": "-",
+                "name": "movie",
+                "type": "Movie"
+              },
+              {
+                "id": "f3",
+                "visibility": "-",
+                "name": "startTime",
+                "type": "Date"
+              },
+              {
+                "id": "f4",
+                "visibility": "-",
+                "name": "showSeats",
+                "type": "Map<String, ShowSeat>"
+              }
+            ],
+            "methods": [
+              {
+                "id": "m1",
+                "visibility": "+",
+                "name": "getAvailableSeats",
+                "type": "List<ShowSeat>"
+              }
+            ]
+          }
+        },
+        "node_show_seat": {
+          "id": "node_show_seat",
+          "position": {
+            "x": 700,
+            "y": 350
+          },
+          "data": {
+            "name": "ShowSeat",
+            "kind": "class",
+            "fields": [
+              {
+                "id": "f1",
+                "visibility": "-",
+                "name": "showSeatId",
+                "type": "String"
+              },
+              {
+                "id": "f2",
+                "visibility": "-",
+                "name": "seat",
+                "type": "Seat"
+              },
+              {
+                "id": "f3",
+                "visibility": "-",
+                "name": "status",
+                "type": "SeatStatus"
+              },
+              {
+                "id": "f4",
+                "visibility": "-",
+                "name": "price",
+                "type": "double"
+              }
+            ],
+            "methods": [
+              {
+                "id": "m1",
+                "visibility": "+",
+                "name": "lockSeat",
+                "type": "boolean"
+              },
+              {
+                "id": "m2",
+                "visibility": "+",
+                "name": "confirmBooking",
+                "type": "void"
+              }
+            ]
+          }
+        },
+        "node_seat_lock_service": {
+          "id": "node_seat_lock_service",
+          "position": {
+            "x": 380,
+            "y": 350
+          },
+          "data": {
+            "name": "SeatLockService",
+            "kind": "class",
+            "fields": [
+              {
+                "id": "f1",
+                "visibility": "-",
+                "name": "lockTtlSeconds",
+                "type": "int"
+              },
+              {
+                "id": "f2",
+                "visibility": "-",
+                "name": "locks",
+                "type": "Map<String, SeatLock>"
+              }
+            ],
+            "methods": [
+              {
+                "id": "m1",
+                "visibility": "+",
+                "name": "tryLockSeats",
+                "type": "boolean",
+                "params": "show: Show, seats: List<ShowSeat>, user: User"
+              },
+              {
+                "id": "m2",
+                "visibility": "+",
+                "name": "releaseSeats",
+                "type": "void",
+                "params": "show: Show, seats: List<ShowSeat>"
+              }
+            ]
+          }
+        },
+        "node_booking": {
+          "id": "node_booking",
+          "position": {
+            "x": 50,
+            "y": 350
+          },
+          "data": {
+            "name": "Booking",
+            "kind": "class",
+            "fields": [
+              {
+                "id": "f1",
+                "visibility": "-",
+                "name": "bookingId",
+                "type": "String"
+              },
+              {
+                "id": "f2",
+                "visibility": "-",
+                "name": "user",
+                "type": "User"
+              },
+              {
+                "id": "f3",
+                "visibility": "-",
+                "name": "bookedSeats",
+                "type": "List<ShowSeat>"
+              },
+              {
+                "id": "f4",
+                "visibility": "-",
+                "name": "status",
+                "type": "BookingStatus"
+              }
+            ],
+            "methods": [
+              {
+                "id": "m1",
+                "visibility": "+",
+                "name": "confirm",
+                "type": "void"
+              },
+              {
+                "id": "m2",
+                "visibility": "+",
+                "name": "cancel",
+                "type": "void"
+              }
+            ]
+          }
+        }
+      },
+      "edges": {
+        "e1": {
+          "id": "e1",
+          "source": "node_cinema",
+          "target": "node_screen",
+          "data": {
+            "kind": "composition",
+            "sourceMultiplicity": "1",
+            "targetMultiplicity": "1..*"
+          }
+        },
+        "e2": {
+          "id": "e2",
+          "source": "node_screen",
+          "target": "node_show",
+          "data": {
+            "kind": "association",
+            "sourceMultiplicity": "1",
+            "targetMultiplicity": "0..*"
+          }
+        },
+        "e3": {
+          "id": "e3",
+          "source": "node_show",
+          "target": "node_show_seat",
+          "data": {
+            "kind": "composition",
+            "sourceMultiplicity": "1",
+            "targetMultiplicity": "1..*"
+          }
+        },
+        "e4": {
+          "id": "e4",
+          "source": "node_seat_lock_service",
+          "target": "node_show_seat",
+          "data": {
+            "kind": "association",
+            "label": "locks"
+          }
+        },
+        "e5": {
+          "id": "e5",
+          "source": "node_booking",
+          "target": "node_show_seat",
+          "data": {
+            "kind": "association",
+            "label": "reserves"
+          }
+        }
+      }
+    },
+    "referenceNotes": "### Movie Booking Core Architecture\n\n- **Physical Seat vs ShowSeat**: Screens have fixed physical layouts (Row, Column, Category: Regular, Premium). A `ShowSeat` binds a physical seat to a temporal screening with independent availability status.\n- **Seat Locking Isolation**: High concurrency happens during seat selection. Separating lock logic into `SeatLockService` allows testing time-based lease releases cleanly.\n- **State Transitions**: `ShowSeat` transitions: AVAILABLE -> TEMPORARILY_LOCKED -> BOOKED (or reverts to AVAILABLE if checkout expires).",
+    "relatedPatternIds": [
+      "state",
+      "observer",
+      "factory-method"
+    ],
+    "commonMistakes": [
+      "Mutating the physical theater seat directly when a user reserves a ticket (corrupting future shows).",
+      "Failing to support lock timeouts, permanently holding seats when checkout tabs are abandoned.",
+      "No synchronization on seat lock acquisition resulting in double-booking."
+    ]
+  }
+]

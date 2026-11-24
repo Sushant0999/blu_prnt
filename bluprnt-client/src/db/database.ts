@@ -8,6 +8,10 @@ import type {
   SavedTopologyDesign,
   ProStatusRecord,
 } from '../types/storage';
+import type {
+  LldDesignRecord,
+  LldProgressRecord,
+} from '../core/types/lld';
 
 export class BluPrntDatabase extends Dexie {
   lessons!: Table<LessonProgress, string>;
@@ -17,6 +21,8 @@ export class BluPrntDatabase extends Dexie {
   interviews!: Table<InterviewProgress, string>;
   designs!: Table<SavedTopologyDesign, string>;
   proStatus!: Table<ProStatusRecord, string>;
+  lldDesigns!: Table<LldDesignRecord, string>;
+  lldProgress!: Table<LldProgressRecord, string>;
 
   constructor() {
     super('BluPrntDatabase');
@@ -28,6 +34,11 @@ export class BluPrntDatabase extends Dexie {
       interviews: '&promptId, practiced, bookmarked',
       designs: '&id, name, updatedAt',
       proStatus: '&id',
+    });
+
+    this.version(2).stores({
+      lldDesigns: '&id, problemId, updatedAt, status',
+      lldProgress: '&problemId, status',
     });
   }
 }

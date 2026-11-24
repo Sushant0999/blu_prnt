@@ -18,6 +18,7 @@ interface VisualCardProps {
   liveState: any;
   latestOutcome?: OutcomeDef;
   params: Record<string, any>;
+  onTriggerFailure?: (actionId: string) => void;
   children?: React.ReactNode;
 }
 
@@ -32,6 +33,7 @@ export const VisualCard: React.FC<VisualCardProps> = ({
   liveState,
   latestOutcome,
   params,
+  onTriggerFailure,
   children,
 }) => {
   const percentage = Math.min(100, Math.max(0, centerMetric.percentage ?? 50));
@@ -138,6 +140,7 @@ export const VisualCard: React.FC<VisualCardProps> = ({
           liveState={liveState}
           latestOutcome={latestOutcome}
           params={params}
+          onTriggerFailure={onTriggerFailure}
         />
       </div>
 

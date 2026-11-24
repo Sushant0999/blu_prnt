@@ -10,6 +10,8 @@ const STATIC_ASSETS = [
   '/content/cases.json',
   '/content/interview.json',
   '/content/flashcards.json',
+  '/content/lld-problems.json',
+  '/content/lld-patterns.json',
   '/content/lessons/caching.json',
   '/content/lessons/consistent-hashing.json',
   '/content/lessons/rate-limiting.json',

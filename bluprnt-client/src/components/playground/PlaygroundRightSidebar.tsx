@@ -30,6 +30,7 @@ import {
 import { MACHINE_TIERS, MachineTierId } from '../../core/types/machineTiers';
 import { ArchitectureAuditReport } from '../../core/algorithms/architectureLinter';
 import { ArchitectureCostEstimate } from '../../core/algorithms/costEstimator';
+import { InterServiceProtocol, PROTOCOL_REGISTRY } from '../../core/types/protocols';
 
 interface PlaygroundRightSidebarProps {
   isOpen: boolean;
@@ -47,6 +48,7 @@ interface PlaygroundRightSidebarProps {
   onUpdateCapacity: (id: string, capacity: number) => void;
   onUpdateLatency: (id: string, latency: number) => void;
   onUpdateMachineTier?: (id: string, tier: MachineTierId) => void;
+  onUpdateEdgeProtocol?: (edgeId: string, protocol: InterServiceProtocol) => void;
   onDeleteNode: (id: string) => void;
   onDisconnectNodes?: (sourceId: string, targetId: string) => void;
   onSelectNodeById: (id: string) => void;
@@ -69,6 +71,7 @@ export const PlaygroundRightSidebar: React.FC<PlaygroundRightSidebarProps> = ({
   onUpdateCapacity,
   onUpdateLatency,
   onUpdateMachineTier,
+  onUpdateEdgeProtocol,
   onDeleteNode,
   onDisconnectNodes,
   onSelectNodeById,
@@ -518,35 +521,61 @@ export const PlaygroundRightSidebar: React.FC<PlaygroundRightSidebarProps> = ({
               </div>
 
               {/* Downstream Targets */}
-              <div className="space-y-1 pt-1">
-                <span className="text-[10px] text-slate-500">Downstream Egress:</span>
+              <div className="space-y-1.5 pt-1">
+                <span className="text-[10px] text-slate-500">Downstream Egress & Protocol:</span>
                 {downstreamNodes.length === 0 ? (
                   <span className="text-[11px] text-slate-600 italic block pl-1">None (Leaf destination)</span>
                 ) : (
-                  downstreamNodes.map((n) => (
-                    <div
-                      key={n.id}
-                      onClick={() => onSelectNodeById(n.id)}
-                      className="p-1.5 rounded-lg bg-slate-950 border border-slate-800 hover:border-cyan-500 cursor-pointer flex items-center justify-between text-xs text-slate-300 transition group/link"
-                    >
-                      <span className="truncate flex-1">{n.data.label}</span>
-                      <div className="flex items-center space-x-1 shrink-0 ml-1.5">
-                        {onDisconnectNodes && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onDisconnectNodes(selectedNode.id, n.id);
-                            }}
-                            className="p-1 rounded text-slate-500 hover:text-rose-400 hover:bg-rose-950/60 transition"
-                            title={`Disconnect link to ${n.data.label}`}
-                          >
-                            <X className="w-3 h-3" />
-                          </button>
+                  downstreamNodes.map((n) => {
+                    const edge = allEdges.find((e) => e.source === selectedNode.id && e.target === n.id);
+                    const currentProto: InterServiceProtocol = (edge?.data as any)?.protocol || 'rest';
+                    return (
+                      <div
+                        key={n.id}
+                        className="p-2 rounded-xl bg-slate-950 border border-slate-800 space-y-1.5"
+                      >
+                        <div
+                          onClick={() => onSelectNodeById(n.id)}
+                          className="flex items-center justify-between text-xs text-slate-300 hover:text-cyan-400 cursor-pointer group/link"
+                        >
+                          <span className="truncate flex-1 font-medium">{n.data.label}</span>
+                          <div className="flex items-center space-x-1 shrink-0 ml-1.5">
+                            {onDisconnectNodes && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onDisconnectNodes(selectedNode.id, n.id);
+                                }}
+                                className="p-1 rounded text-slate-500 hover:text-rose-400 hover:bg-rose-950/60 transition"
+                                title={`Disconnect link to ${n.data.label}`}
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            )}
+                            <ArrowRight className="w-3 h-3 text-slate-500 group-hover/link:text-cyan-400" />
+                          </div>
+                        </div>
+
+                        {/* Protocol Selector for this inter-service edge */}
+                        {edge && onUpdateEdgeProtocol && (
+                          <div className="flex items-center justify-between pt-1 border-t border-slate-850 text-[10px] font-mono">
+                            <span className="text-slate-500">Protocol:</span>
+                            <select
+                              value={currentProto}
+                              onChange={(e) => onUpdateEdgeProtocol(edge.id, e.target.value as InterServiceProtocol)}
+                              className="bg-slate-900 border border-slate-750 text-slate-200 rounded px-1.5 py-0.5 text-[10px] font-mono focus:border-cyan-500 focus:outline-none"
+                            >
+                              {(Object.keys(PROTOCOL_REGISTRY) as InterServiceProtocol[]).map((pKey) => (
+                                <option key={pKey} value={pKey}>
+                                  {PROTOCOL_REGISTRY[pKey].badge} - {pKey.toUpperCase()}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
                         )}
-                        <ArrowRight className="w-3 h-3 text-slate-500 group-hover/link:text-cyan-400" />
                       </div>
-                    </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
             </div>

@@ -66,6 +66,7 @@ import {
 import { auditArchitecture } from '../core/algorithms/architectureLinter';
 import { estimateArchitectureCost } from '../core/algorithms/costEstimator';
 import { MACHINE_TIERS, MachineTierId } from '../core/types/machineTiers';
+import { InterServiceProtocol } from '../core/types/protocols';
 import { db } from '../db/database';
 import { SavedTopologyDesign } from '../types/storage';
 
@@ -291,6 +292,9 @@ export const PlaygroundPage: React.FC = () => {
           sourceHandle: val.sourceHandle,
           targetHandle: val.targetHandle,
           animated: true,
+          data: {
+            protocol: val.protocol || 'rest',
+          },
         });
       });
       setCollabEdges(eds);
@@ -733,10 +737,36 @@ export const PlaygroundPage: React.FC = () => {
     [isCollab, doc, transact, userRole]
   );
 
-  // Dynamically animated edges with discrete-event packet telemetry and delete actions
+  // Handle update edge protocol
+  const handleUpdateEdgeProtocol = useCallback(
+    (edgeId: string, protocol: InterServiceProtocol) => {
+      if (isCollab) {
+        if (userRole === 'viewer') return;
+        const edgesMap = doc.getMap('edges');
+        const ex: any = edgesMap.get(edgeId);
+        if (ex) {
+          transact(() => {
+            edgesMap.set(edgeId, { ...ex, protocol });
+          });
+        }
+      } else {
+        setLocalEdges((eds) =>
+          eds.map((e) =>
+            e.id === edgeId
+              ? { ...e, data: { ...e.data, protocol } }
+              : e
+          )
+        );
+      }
+    },
+    [isCollab, doc, transact, userRole]
+  );
+
+  // Dynamically animated edges with discrete-event packet telemetry, protocols and delete actions
   const processedEdges = useMemo(() => {
     return currentEdges.map((e) => {
       const metric = activeSimulation?.edgeMetrics?.[e.id];
+      const protocol: InterServiceProtocol = (e.data as any)?.protocol || 'rest';
       return {
         ...e,
         type: 'animatedEdge',
@@ -744,11 +774,13 @@ export const PlaygroundPage: React.FC = () => {
           trafficRps: metric?.trafficRps ?? (activeSimulation ? 1000 : 0),
           latencyMs: metric?.latencyMs ?? 0,
           status: metric?.status ?? 'normal',
+          protocol,
           onDeleteEdge: () => handleDeleteEdge(e.id),
+          onUpdateProtocol: (p: InterServiceProtocol) => handleUpdateEdgeProtocol(e.id, p),
         },
       };
     });
-  }, [currentEdges, activeSimulation, handleDeleteEdge]);
+  }, [currentEdges, activeSimulation, handleDeleteEdge, handleUpdateEdgeProtocol]);
 
   // Node position & change events
   const onNodesChange = useCallback(
@@ -812,10 +844,13 @@ export const PlaygroundPage: React.FC = () => {
             target: connection.target,
             sourceHandle: connection.sourceHandle,
             targetHandle: connection.targetHandle,
+            protocol: 'rest',
           });
         });
       } else {
-        setLocalEdges((eds) => addEdge({ ...connection, animated: true }, eds));
+        setLocalEdges((eds) =>
+          addEdge({ ...connection, animated: true, data: { protocol: 'rest' } }, eds)
+        );
       }
     },
     [isCollab, doc, transact, userRole]
@@ -1642,6 +1677,7 @@ export const PlaygroundPage: React.FC = () => {
           onUpdateCapacity={handleUpdateCapacity}
           onUpdateLatency={handleUpdateLatency}
           onUpdateMachineTier={handleUpdateMachineTier}
+          onUpdateEdgeProtocol={handleUpdateEdgeProtocol}
           onDeleteNode={handleDeleteNode}
           onDisconnectNodes={handleDisconnectNodes}
           onSelectNodeById={(id) => {

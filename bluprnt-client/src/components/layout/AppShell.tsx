@@ -53,6 +53,7 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
 
   const navItems = [
     { label: 'Learn', path: '/', icon: BookOpen, matchPrefixes: ['/lessons'] },
+    { label: 'LLD Studio', path: '/lld', icon: Layers, badge: 'New', matchPrefixes: ['/lld'] },
     { label: 'Cases', path: '/cases', icon: FileText },
     { label: 'Simulate', path: '/simulate', icon: Cpu, badge: 'Auto-Stream', matchPrefixes: ['/simulators', '/playground'] },
     { label: 'Practice', path: '/interview', icon: Sparkles, matchPrefixes: ['/flashcards', '/calculators'] },

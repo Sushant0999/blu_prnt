@@ -1,4 +1,6 @@
 import React from 'react';
+import { FlowDiagram } from './FlowDiagram';
+import { getFlowDiagramProps } from '../engine/flowTopologyAdapters';
 import {
   Server,
   Cpu,
@@ -34,6 +36,7 @@ interface AlgorithmVisualizerProps {
   liveState: any;
   latestOutcome?: OutcomeDef;
   params: Record<string, any>;
+  onTriggerFailure?: (actionId: string) => void;
 }
 
 export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
@@ -45,47 +48,105 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
   liveState,
   latestOutcome,
   params,
+  onTriggerFailure,
 }) => {
-  switch (simulatorId) {
-    case 'consistent-hashing':
-      return <ConsistentHashingVisualizer modeId={modeId} liveState={liveState} latestOutcome={latestOutcome} />;
-    case 'rate-limiter':
-      return <RateLimiterVisualizer modeId={modeId} liveState={liveState} rate={rate} isPaused={isPaused} params={params} />;
-    case 'load-balancer':
-      return <LoadBalancerVisualizer liveState={liveState} latestOutcome={latestOutcome} />;
-    case 'cache-policies':
-      return <CachePoliciesVisualizer modeId={modeId} liveState={liveState} latestOutcome={latestOutcome} />;
-    case 'bloom-filter':
-      return <BloomFilterVisualizer liveState={liveState} latestOutcome={latestOutcome} />;
-    case 'lsm-tree':
-      return <LsmTreeVisualizer liveState={liveState} isPaused={isPaused} />;
-    case 'raft-consensus':
-      return <RaftConsensusVisualizer liveState={liveState} isPaused={isPaused} />;
-    case 'circuit-breaker':
-      return <CircuitBreakerVisualizer liveState={liveState} />;
-    case 'distributed-transactions':
-      return <DistributedTxVisualizer modeId={modeId} liveState={liveState} latestOutcome={latestOutcome} />;
-    case 'message-queue':
-      return <MessageQueueVisualizer modeId={modeId} liveState={liveState} isPaused={isPaused} />;
-    case 'storage-indexes':
-      return <StorageIndexesVisualizer modeId={modeId} liveState={liveState} />;
-    case 'replication':
-      return <ReplicationVisualizer modeId={modeId} liveState={liveState} />;
-    case 'sharding-partitioning':
-      return <ShardingVisualizer modeId={modeId} liveState={liveState} latestOutcome={latestOutcome} />;
-    case 'cdn-edge-caching':
-      return <CdnEdgeVisualizer modeId={modeId} liveState={liveState} />;
-    case 'retry-strategies':
-      return <RetryStrategiesVisualizer modeId={modeId} liveState={liveState} latestOutcome={latestOutcome} />;
-    case 'idempotency-delivery':
-      return <IdempotencyVisualizer modeId={modeId} liveState={liveState} latestOutcome={latestOutcome} />;
-    case 'autoscaling-backpressure':
-      return <AutoscalingVisualizer liveState={liveState} rate={rate} />;
-    case 'gossip-protocol':
-      return <GossipProtocolVisualizer liveState={liveState} />;
-    default:
-      return <GenericEnterpriseVisualizer liveState={liveState} rate={rate} isPaused={isPaused} />;
-  }
+  const [viewMode, setViewMode] = React.useState<'flow' | 'telemetry'>('flow');
+
+  const flowProps = getFlowDiagramProps({
+    simulatorId,
+    modeId,
+    liveState,
+    latestOutcome,
+    rate,
+    params,
+    onTriggerFailure,
+    isPaused,
+  });
+
+  const renderTelemetryVisualizer = () => {
+    switch (simulatorId) {
+      case 'consistent-hashing':
+        return <ConsistentHashingVisualizer modeId={modeId} liveState={liveState} latestOutcome={latestOutcome} />;
+      case 'rate-limiter':
+        return <RateLimiterVisualizer modeId={modeId} liveState={liveState} rate={rate} isPaused={isPaused} params={params} />;
+      case 'load-balancer':
+        return <FlowDiagram {...flowProps} />;
+      case 'cache-policies':
+        return <CachePoliciesVisualizer modeId={modeId} liveState={liveState} latestOutcome={latestOutcome} />;
+      case 'bloom-filter':
+        return <BloomFilterVisualizer liveState={liveState} latestOutcome={latestOutcome} />;
+      case 'lsm-tree':
+        return <LsmTreeVisualizer liveState={liveState} isPaused={isPaused} />;
+      case 'raft-consensus':
+        return <RaftConsensusVisualizer liveState={liveState} isPaused={isPaused} />;
+      case 'circuit-breaker':
+        return <CircuitBreakerVisualizer liveState={liveState} />;
+      case 'distributed-transactions':
+        return <DistributedTxVisualizer modeId={modeId} liveState={liveState} latestOutcome={latestOutcome} />;
+      case 'message-queue':
+        return <MessageQueueVisualizer modeId={modeId} liveState={liveState} isPaused={isPaused} />;
+      case 'storage-indexes':
+        return <StorageIndexesVisualizer modeId={modeId} liveState={liveState} />;
+      case 'replication':
+        return <ReplicationVisualizer modeId={modeId} liveState={liveState} />;
+      case 'sharding-partitioning':
+        return <ShardingVisualizer modeId={modeId} liveState={liveState} latestOutcome={latestOutcome} />;
+      case 'cdn-edge-caching':
+        return <CdnEdgeVisualizer modeId={modeId} liveState={liveState} />;
+      case 'retry-strategies':
+        return <RetryStrategiesVisualizer modeId={modeId} liveState={liveState} latestOutcome={latestOutcome} />;
+      case 'idempotency-delivery':
+        return <IdempotencyVisualizer modeId={modeId} liveState={liveState} latestOutcome={latestOutcome} />;
+      case 'autoscaling-backpressure':
+        return <AutoscalingVisualizer liveState={liveState} rate={rate} />;
+      case 'gossip-protocol':
+        return <GossipProtocolVisualizer liveState={liveState} />;
+      default:
+        return <GenericEnterpriseVisualizer liveState={liveState} rate={rate} isPaused={isPaused} />;
+    }
+  };
+
+  return (
+    <div className="space-y-3">
+      {/* View Switcher Pill */}
+      <div className="flex items-center justify-between px-1">
+        <span className="text-xs font-mono font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+          Active Topology
+        </span>
+        <div className="flex items-center bg-slate-900 border border-slate-800 rounded-lg p-0.5 text-[11px] font-mono">
+          <button
+            type="button"
+            onClick={() => setViewMode('flow')}
+            className={`px-2.5 py-1 rounded-md transition-colors ${
+              viewMode === 'flow'
+                ? 'bg-emerald-600 text-white font-bold shadow-sm'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            Flow Diagram
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewMode('telemetry')}
+            className={`px-2.5 py-1 rounded-md transition-colors ${
+              viewMode === 'telemetry'
+                ? 'bg-emerald-600 text-white font-bold shadow-sm'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            Telemetry View
+          </button>
+        </div>
+      </div>
+
+      {viewMode === 'flow' ? (
+        <FlowDiagram {...flowProps} />
+      ) : (
+        renderTelemetryVisualizer()
+      )}
+    </div>
+  );
 };
 
 /* =========================================================================
@@ -325,75 +386,53 @@ const RateLimiterVisualizer: React.FC<{
 };
 
 /* =========================================================================
-   3. LOAD BALANCER: CLUSTER SERVERS & ACTIVE CONNS
+   3. LOAD BALANCER: CLUSTER SERVERS & ACTIVE CONNS (FLOW DIAGRAM)
    ========================================================================= */
-const LoadBalancerVisualizer: React.FC<{ liveState: any; latestOutcome?: OutcomeDef }> = ({
-  liveState,
-  latestOutcome,
-}) => {
-  const servers = liveState?.servers || [
-    { id: 1, name: 'Server A', activeConns: 5, weight: 3, healthy: true },
-    { id: 2, name: 'Server B', activeConns: 8, weight: 2, healthy: true },
-    { id: 3, name: 'Server C', activeConns: 2, weight: 1, healthy: true },
+const LoadBalancerVisualizer: React.FC<{
+  liveState: any;
+  latestOutcome?: OutcomeDef;
+  isPaused?: boolean;
+  onTriggerFailure?: (actionId: string) => void;
+}> = ({ liveState, isPaused, onTriggerFailure }) => {
+  const nodes = liveState?.nodes || [
+    { id: 'clients', label: 'Clients', kind: 'source' },
+    { id: 'balancer', label: 'Balancer', kind: 'hub' },
+    { id: 'srv1', label: 'srv1', kind: 'card' },
+    { id: 'srv2', label: 'srv2', kind: 'card' },
+    { id: 'srv3', label: 'srv3', kind: 'card' },
   ];
+  const edges = liveState?.edges || [
+    { id: 'edge-client-balancer', source: 'clients', target: 'balancer' },
+    { id: 'edge-balancer-srv1', source: 'balancer', target: 'srv1' },
+    { id: 'edge-balancer-srv2', source: 'balancer', target: 'srv2' },
+    { id: 'edge-balancer-srv3', source: 'balancer', target: 'srv3' },
+  ];
+  const packets = liveState?.packets || [];
+  const nodeStatus = liveState?.nodeStatus || {
+    srv1: { active: 3, done: 5, load: 0.3, state: 'normal' },
+    srv2: { active: 7, done: 0, load: 0.7, state: 'slow', stateLabel: 'SLOW' },
+    srv3: { active: 3, done: 4, load: 0.3, state: 'normal' },
+  };
+  const stats = liveState?.stats || {
+    handled: 9,
+    inFlight: 13,
+    imbalance: 4,
+  };
+
+  const handleToggleNodeSlow = (nodeId: string) => {
+    onTriggerFailure?.(`toggle_slow_${nodeId}`);
+  };
 
   return (
-    <div className="space-y-3">
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        {servers.map((s: any, idx: number) => {
-          const isTarget = latestOutcome?.label?.includes(s.name);
-          const maxConns = s.maxConns || 25;
-          const connPct = Math.min(100, Math.round(((s.activeConns || 0) / maxConns) * 100));
-
-          return (
-            <div
-              key={s.id || idx}
-              className={`p-3.5 rounded-xl border transition-all duration-200 flex flex-col justify-between ${
-                isTarget
-                  ? 'bg-slate-800/90 border-cyan-500 shadow-md shadow-cyan-500/20 scale-[1.02]'
-                  : 'bg-slate-950/70 border-slate-800'
-              }`}
-            >
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <Server className={`w-4 h-4 ${isTarget ? 'text-cyan-400' : 'text-slate-400'}`} />
-                  <span className="font-bold text-xs text-white">{s.name}</span>
-                </div>
-                <span
-                  className={`text-[9px] font-mono px-1.5 py-0.2 rounded font-bold uppercase ${
-                    s.healthy !== false
-                      ? 'bg-emerald-950 text-emerald-300 border border-emerald-800'
-                      : 'bg-rose-950 text-rose-300 border border-rose-800'
-                  }`}
-                >
-                  {s.healthy !== false ? 'Healthy' : '503 Fail'}
-                </span>
-              </div>
-
-              <div className="space-y-1.5 my-2">
-                <div className="flex items-center justify-between text-[11px] font-mono text-slate-400">
-                  <span>In-flight Conns</span>
-                  <span className="font-bold text-slate-200">{s.activeConns || 0}</span>
-                </div>
-                <div className="w-full h-1.5 rounded-full bg-slate-800 overflow-hidden">
-                  <div
-                    className={`h-full rounded-full transition-all duration-200 ${
-                      connPct > 80 ? 'bg-rose-500' : connPct > 50 ? 'bg-amber-400' : 'bg-cyan-400'
-                    }`}
-                    style={{ width: `${Math.max(8, connPct)}%` }}
-                  />
-                </div>
-              </div>
-
-              <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between text-[10px] text-slate-400 font-mono">
-                <span>Weight: {s.weight || 1}x</span>
-                <span>Served: {s.served || 0}</span>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
+    <FlowDiagram
+      nodes={nodes}
+      edges={edges}
+      packets={packets}
+      nodeStatus={nodeStatus}
+      stats={stats}
+      isPaused={isPaused}
+      onToggleNodeSlow={handleToggleNodeSlow}
+    />
   );
 };
 
