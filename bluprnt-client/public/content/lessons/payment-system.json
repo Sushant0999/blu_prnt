@@ -1,0 +1,46 @@
+{
+  "id": "payment-system",
+  "title": "Payment System & Double-Entry Ledger",
+  "intro": "Architect a mission-critical payment processing system guaranteeing exactly-once charge semantics, idempotency, and audit-compliant double-entry accounting.",
+  "objectives": [
+    "Enforce strict API idempotency using unique Idempotency Keys and distributed mutexes.",
+    "Implement double-entry bookkeeping: $\\sum \\text{Debits} = \\sum \\text{Credits}$ at all times.",
+    "Design asynchronous payment gateway reconciliation and settlement batch workers."
+  ],
+  "body": "### The Idempotency Protocol\nNetwork calls fail unpredictably. When a client times out waiting for a payment response, it retries. Without idempotency, the customer is billed twice.\n1. Client generates UUID `Idempotency-Key` header with charge request.\n2. Server attempts atomic insert of key in Redis/DB with status `PROCESSING`.\n3. If duplicate key arrives while processing, server returns `HTTP 409 Conflict` or waits.\n4. Once payment gateway (Stripe) succeeds, server saves final response payload mapped to the key. Subsequent retries immediately return cached `HTTP 200 OK`.\n\n### Double-Entry Accounting Invariant\nMoney cannot be created or destroyed. Every transaction consists of matched Debit and Credit entries:\n$$\\sum \\text{Debits} - \\sum \\text{Credits} = 0$$\nNever store user balances as mutable raw numbers; compute balance from immutable ledger audit rows.",
+  "keyIdea": "Money systems must be strictly idempotent and backed by immutable double-entry ledgers. Always reconcile external payment gateway logs asynchronously.",
+  "diagramType": "payment",
+  "concepts": [
+    {
+      "title": "Reconciliation Engine",
+      "body": "Daily batch worker comparing internal ledger records with external payment processor bank settlement files (BAI2 / MT940)."
+    },
+    {
+      "title": "Payment State Machine",
+      "body": "Initialized -> Authorized -> Captured (or Voided / Refunded)."
+    }
+  ],
+  "examples": [
+    "Stripe API idempotency design handling billions of transactions."
+  ],
+  "resources": [
+    {
+      "title": "Designing Robust Payment Systems (Stripe Engineering)",
+      "url": "https://stripe.com/blog/idempotency"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "prompt": "What core rule governs double-entry bookkeeping in payment ledgers?",
+      "options": [
+        "Only debit operations are recorded",
+        "Every transaction must contain equal matching debit and credit entries with net sum zero",
+        "User balances must be stored in volatile RAM caches",
+        "Transactions can only be executed during banking hours"
+      ],
+      "correct": 1,
+      "explanation": "Double-entry accounting requires every balance transfer to record equal debits and credits, preserving total system balance."
+    }
+  ]
+}

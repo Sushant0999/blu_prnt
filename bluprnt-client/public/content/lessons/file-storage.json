@@ -1,0 +1,46 @@
+{
+  "id": "file-storage",
+  "title": "Distributed File Storage (Google Drive)",
+  "intro": "Design a scalable cloud file storage and synchronization service (Google Drive, Dropbox) supporting multi-gigabyte uploads, chunk deduplication, and cross-device sync.",
+  "objectives": [
+    "Implement block-level chunking (4MB blocks) with content-addressed SHA-256 deduplication.",
+    "Separate relational file metadata (folder hierarchy, permissions) from immutable block object storage (S3).",
+    "Enable resumable uploads and delta sync for modified documents."
+  ],
+  "body": "### Architectural Decomposition\n1. **Block Storage Service**: Large files are split on the client into uniform 4MB chunks. Each chunk is hashed using SHA-256 (`chunk_hash = SHA256(data)`). If the chunk hash already exists in storage, upload is skipped (**deduplication**).\n2. **Metadata Database**: Stores file names, user directory hierarchies, version histories, and the ordered list of chunk hashes comprising each file.\n3. **Sync Notification Service**: Long-polling or WebSocket connections notify other client devices when files change, instructing them to download only the modified 4MB delta chunks.",
+  "keyIdea": "Separate metadata from blob data. Split files into content-addressed chunks to achieve bandwidth-saving deduplication and resumable multi-part uploads.",
+  "diagramType": "filestorage",
+  "concepts": [
+    {
+      "title": "Content-Addressed Storage",
+      "body": "Storing and naming chunks by their cryptographic SHA-256 hash ensures that identical files uploaded by different users share the same underlying storage."
+    },
+    {
+      "title": "Resumable Uploads",
+      "body": "Client uploads chunks independently; if network drops at 90%, only the failed 4MB chunk needs retransmission, not the entire multi-gigabyte file."
+    }
+  ],
+  "examples": [
+    "Dropbox infrastructure scaling block storage over Amazon S3 and custom Magic Pocket clusters."
+  ],
+  "resources": [
+    {
+      "title": "Dropbox Architecture: Scaling Magic Pocket",
+      "url": "https://dropbox.tech/infrastructure"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "prompt": "What is the primary benefit of splitting large files into 4MB chunks named by their SHA-256 hash?",
+      "options": [
+        "Files become encrypted automatically",
+        "Enables global deduplication, delta sync, and resilient resumable uploads",
+        "Prevents files from being downloaded over mobile networks",
+        "Increases relational database query speed"
+      ],
+      "correct": 1,
+      "explanation": "Content-addressed chunking enables bandwidth-saving deduplication and allows uploading only modified chunks."
+    }
+  ]
+}

@@ -1,0 +1,47 @@
+{
+  "id": "kafka-architecture",
+  "title": "Apache Kafka (Topics, Partitions, Consumer Groups)",
+  "intro": "Apache Kafka is a distributed event streaming platform built as an append-only commit log, supporting millions of events per second with strict per-partition ordering.",
+  "objectives": [
+    "Deconstruct Kafka's fundamental storage unit: the partitioned append-only commit log.",
+    "Analyze consumer group rebalancing and distributed partition assignment.",
+    "Achieve zero-copy high throughput using Linux sendfile and sequential disk I/O."
+  ],
+  "body": "### Partitioning & Order Guarantees\nA Kafka Topic is divided into multiple **Partitions**. Kafka guarantees strict total ordering **only within a single partition**, not across partitions. Producers specify a Partition Key (e.g. `order_id` or `user_id`); all records sharing the same key are guaranteed to land on the same partition via hash mod:\n\n$$\\text{partition} = \\text{hash}(\\text{key}) \\pmod{\\text{numPartitions}}$$\n\n### Consumer Groups & Scalability\nA Consumer Group represents a single logical subscriber. Each partition in a topic is consumed by exactly **one** consumer instance in the group at any given time. If you have 8 partitions, having more than 8 consumer instances in the group leaves the excess consumers idle.",
+  "keyIdea": "Kafka treats disk as an append-only log, exploiting sequential I/O and OS page caches to outperform in-memory brokers at scale.",
+  "sim": "messageQueue",
+  "diagramType": "kafka",
+  "concepts": [
+    {
+      "title": "Zero-Copy Data Transfer",
+      "body": "Kafka uses the `sendfile()` system call to transfer bytes directly from OS page cache to the network socket, bypassing user-space memory buffers."
+    },
+    {
+      "title": "In-Sync Replicas (ISR)",
+      "body": "The set of broker replicas that are fully caught up with the partition leader's commit log."
+    }
+  ],
+  "examples": [
+    "Uber streaming trillions of daily driver telemetry pings through Kafka clusters into Apache Flink."
+  ],
+  "resources": [
+    {
+      "title": "Kafka: The Definitive Guide (Narkhede et al.)",
+      "url": "https://www.confluent.io/resources/kafka-the-definitive-guide/"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "prompt": "If a Kafka topic has 6 partitions and a consumer group has 10 worker instances, how many workers will actively consume data?",
+      "options": [
+        "All 10 workers evenly",
+        "6 workers (4 will remain idle)",
+        "Only 1 leader worker",
+        "12 workers via hyper-threading"
+      ],
+      "correct": 1,
+      "explanation": "Each partition is assigned to at most one consumer in a group. Excess consumers beyond the partition count remain idle."
+    }
+  ]
+}

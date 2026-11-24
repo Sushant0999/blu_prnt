@@ -1,0 +1,46 @@
+{
+  "id": "ticket-booking",
+  "title": "High-Concurrency Ticket Booking (BookMyShow)",
+  "intro": "Design a high-concurrency ticket booking platform handling viral stadium concert sales with zero double-booking and fair virtual queuing.",
+  "objectives": [
+    "Implement distributed seat holding with short-lived TTLs using Redis mutexes.",
+    "Protect primary databases during flash sales via Virtual Waiting Rooms (Token buckets).",
+    "Handle seat release timeouts when customers abandon payment checkout."
+  ],
+  "body": "### The Flash-Sale Ticket Problem\nWhen tickets for a stadium concert go live, 500,000 fans attempt to reserve 50,000 seats in seconds. Direct database queries crash under row-lock contention.\n\n### The Multi-Tier Architecture\n1. **Virtual Waiting Room (Queue-IT)**: Incoming users enter a waiting room queue and are admitted to the seat selection canvas in metered batches matching backend processing capacity.\n2. **Temporary Seat Hold (Redis Mutex with TTL)**: When Alice clicks seat `A-12`, server acquires Redis distributed lock `SET lock:seat:A12 user_alice NX EX 600` (10-minute lease).\n3. **Seat State Transition**: `AVAILABLE -> HELD -> BOOKED`.\n4. **Timeout Expiration**: If payment is not completed in 10 minutes, Redis key expires and seat returns to `AVAILABLE`.",
+  "keyIdea": "Meter incoming flash traffic with a virtual waiting room. Use distributed Redis locks with finite leases (TTLs) to manage temporary seat holds.",
+  "diagramType": "ticketbooking",
+  "concepts": [
+    {
+      "title": "Optimistic Locking",
+      "body": "Database rows verify version number on commit (`UPDATE seat SET status='BOOKED', version=2 WHERE id='A12' AND version=1`)."
+    },
+    {
+      "title": "Seat Map Caching",
+      "body": "Compress stadium seat availability bitmap and distribute via CDN with short 2-second TTLs."
+    }
+  ],
+  "examples": [
+    "Ticketmaster and BookMyShow handling stadium world tour drops."
+  ],
+  "resources": [
+    {
+      "title": "How Ticketmaster Handles Flash Sales",
+      "url": "https://tech.ticketmaster.com/"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "prompt": "Why should temporary seat holds carry a strict Time-To-Live (TTL)?",
+      "options": [
+        "To comply with GDPR rules",
+        "To automatically release seats back to other customers if a user abandons checkout without paying",
+        "To reduce network bandwidth on Wi-Fi",
+        "To force users to re-login"
+      ],
+      "correct": 1,
+      "explanation": "A TTL ensures seats locked by users who drop off or experience payment failure are automatically freed for other buyers."
+    }
+  ]
+}

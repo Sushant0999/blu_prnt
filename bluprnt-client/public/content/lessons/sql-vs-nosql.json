@@ -1,0 +1,45 @@
+{
+  "id": "sql-vs-nosql",
+  "title": "SQL vs NoSQL Data Stores",
+  "intro": "Choosing between Relational (SQL) and Non-Relational (NoSQL) storage engines shapes transaction semantics, query capabilities, and horizontal scaling limits.",
+  "objectives": [
+    "Analyze ACID transactional guarantees vs BASE (Basically Available, Soft-state, Eventual consistency).",
+    "Classify NoSQL families: Key-Value, Document, Wide-Column, Graph, and Columnar OLAP.",
+    "Determine when to choose relational schemas vs denormalized document models."
+  ],
+  "body": "### Taxonomy of Database Engines\n1. **Relational (RDBMS)**: PostgreSQL, MySQL. Rigid relational schemas, joins, B-Tree indexes, and ACID transactions. Difficult to scale writes horizontally beyond a single primary node.\n2. **Key-Value**: Redis, DynamoDB. Extreme throughput ($O(1)$ lookups) by partition key. Zero relational joins.\n3. **Document**: MongoDB, Couchbase. Semi-structured JSON documents. Ideal for polymorphic schemas and hierarchical data.\n4. **Wide-Column (LSM)**: Apache Cassandra, ScyllaDB. Partition key + clustering column. High write throughput, scalable across global masterless clusters.\n5. **Columnar OLAP**: ClickHouse, Snowflake. Organizes data by column rather than row, enabling lightning-fast analytical aggregation across billions of records.",
+  "keyIdea": "Default to PostgreSQL for transactional integrity and complex relational queries. Adopt NoSQL when write volume, global replication, or specific data shapes (graphs, timeseries) exceed RDBMS limits.",
+  "concepts": [
+    {
+      "title": "B-Tree vs LSM-Tree",
+      "body": "B-Trees optimize for random reads with in-place page updates ($O(\\log N)$). LSM-Trees optimize for write throughput with sequential appends and background compaction."
+    },
+    {
+      "title": "Denormalization",
+      "body": "Duplicating data across documents to eliminate expensive cross-node joins at query time."
+    }
+  ],
+  "examples": [
+    "Stripe using PostgreSQL for transaction ledgers; Uber using Cassandra for driver location histories."
+  ],
+  "resources": [
+    {
+      "title": "Database Internals (Alex Petrov)",
+      "url": "https://www.databass.dev/"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "prompt": "Which database engine family is best optimized for high-volume analytical aggregations (e.g. SUM, AVG) across billions of historical records?",
+      "options": [
+        "Relational OLTP (MySQL)",
+        "Document Store (MongoDB)",
+        "Columnar OLAP (ClickHouse)",
+        "Graph Database (Neo4j)"
+      ],
+      "correct": 2,
+      "explanation": "Columnar storage reads only the relevant columns from disk into memory, delivering orders of magnitude faster analytics."
+    }
+  ]
+}

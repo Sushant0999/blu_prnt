@@ -1,0 +1,46 @@
+{
+  "id": "search-autocomplete",
+  "title": "Search Autocomplete (Typeahead)",
+  "intro": "Design a real-time search typeahead system returning top-k query completions within 20 milliseconds as users type character-by-character.",
+  "objectives": [
+    "Construct and optimize Trie (prefix tree) data structures with precomputed top-k suggestions.",
+    "Sample query frequencies using background MapReduce/Spark aggregation jobs.",
+    "Distribute prefix trees across Redis clusters using consistent hashing."
+  ],
+  "body": "### Data Structure: Trie with Precomputed Top-K\nA standard Trie prefix search requires traversing from the prefix node down to all leaf nodes and sorting by frequency, which is far too slow for a 20ms SLA. **Optimization**: Store the top-5 most frequent search queries directly inside each Trie node:\n\n```\n          [root]\n          /    \\\n        's'    'a'\n        /        \\\n      'sy'       'ap'\n (top: 'system',  (top: 'apple',\n  'sysdesign')     'app store')\n```\nLookup latency drops to $O(L)$, where $L$ is the length of the query string (e.g. 3-5 characters), completely independent of total catalog size!",
+  "keyIdea": "Precompute the top-k suggestions at every node in the prefix Trie. Query latency depends only on input prefix length, not dictionary size.",
+  "diagramType": "trie",
+  "concepts": [
+    {
+      "title": "Frequency Sampling",
+      "body": "Instead of logging every single keystroke, log 1 out of every 100 queries to calculate statistical frequency distributions with minimal I/O."
+    },
+    {
+      "title": "Client-Side Debouncing",
+      "body": "Debouncing queries in JavaScript (e.g. 150ms delay) prevents flooding backend servers while the user is actively typing."
+    }
+  ],
+  "examples": [
+    "Google instant search autocomplete and Amazon product typeahead."
+  ],
+  "resources": [
+    {
+      "title": "System Design: Search Autocomplete",
+      "url": "https://bytebytego.com/"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "prompt": "How does storing precomputed top-k results at each Trie node improve lookup latency?",
+      "options": [
+        "It compresses the Trie using gzip",
+        "It reduces query time complexity from traversing the entire subtree to O(L) where L is prefix length",
+        "It eliminates the need for RAM",
+        "It bypasses network round trips"
+      ],
+      "correct": 1,
+      "explanation": "Precomputing top-k results at each node allows instant lookup in O(L) time without traversing downstream descendants."
+    }
+  ]
+}

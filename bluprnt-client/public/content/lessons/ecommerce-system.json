@@ -1,0 +1,46 @@
+{
+  "id": "ecommerce-system",
+  "title": "E-Commerce Order & Inventory Pipeline",
+  "intro": "Design an e-commerce checkout and inventory management pipeline capable of handling flash-sale traffic surges without overselling inventory.",
+  "objectives": [
+    "Orchestrate distributed transactions across Order, Payment, and Inventory services using the Saga Pattern.",
+    "Enforce atomic inventory reservations using Redis distributed locks and Lua scripts.",
+    "Implement cart expiration timers and stock compensation rollbacks."
+  ],
+  "body": "### Preventing Overselling in Flash Sales\nDuring flash sales (e.g. 10,000 users vying for 100 gaming consoles), relational database `UPDATE inventory SET stock = stock - 1 WHERE id = ? AND stock > 0` triggers extreme row-level lock contention and connection pool exhaustion.\n\n### The High-Concurrency Inventory Solution\n1. **Pre-load Stock into Redis**: Store available stock as an integer in Redis.\n2. **Atomic Lua Reservation**: Execute atomic stock decrement via Lua script in single-threaded Redis:\n```lua\nif redis.call('get', KEYS[1]) > '0' then\n    return redis.call('decr', KEYS[1])\nelse\n    return -1\nend\n```\n3. **Delayed Cart TTL**: If user does not complete payment within 15 minutes, an event timer increments Redis stock and releases the reservation.",
+  "keyIdea": "Protect primary databases from flash-sale lock contention using atomic Redis Lua scripts. Use the Saga pattern to manage distributed compensation transactions.",
+  "diagramType": "ecommerce",
+  "concepts": [
+    {
+      "title": "Saga Orchestration",
+      "body": "A centralized orchestrator coordinates transaction steps across services and triggers compensating transactions (refunds, stock release) upon failure."
+    },
+    {
+      "title": "Two-Phase Commit (2PC) vs Saga",
+      "body": "2PC holds blocking locks across databases until all commit. Sagas execute independent local transactions with asynchronous compensating rollback, maximizing throughput."
+    }
+  ],
+  "examples": [
+    "Amazon flash sale checkout architecture handling Cyber Monday order surges."
+  ],
+  "resources": [
+    {
+      "title": "Pattern: Saga (Chris Richardson)",
+      "url": "https://microservices.io/patterns/data/saga.html"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "prompt": "Why is a Saga pattern preferred over Two-Phase Commit (2PC) in high-throughput microservices?",
+      "options": [
+        "Sagas guarantee ACID across all databases",
+        "2PC holds synchronous database locks, creating severe latency bottlenecks and availability fragility",
+        "Sagas eliminate the need for payment gateways",
+        "2PC cannot be used with SQL databases"
+      ],
+      "correct": 1,
+      "explanation": "2PC's synchronous locking across distributed nodes creates severe bottlenecks and vulnerability to single-node failures."
+    }
+  ]
+}

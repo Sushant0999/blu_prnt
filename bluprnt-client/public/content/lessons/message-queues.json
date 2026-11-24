@@ -1,0 +1,47 @@
+{
+  "id": "message-queues",
+  "title": "Message Queues & Event-Driven Architecture",
+  "intro": "Message queues decouple distributed producers and consumers, smoothing out spiky workloads, absorbing traffic surges, and guaranteeing reliable asynchronous processing.",
+  "objectives": [
+    "Contrast point-to-point queues (RabbitMQ, SQS) with append-only distributed event logs (Kafka).",
+    "Formulate message delivery guarantees: At-Least-Once, At-Most-Once, and Exactly-Once (Idempotency).",
+    "Implement Dead Letter Queues (DLQ) and exponential retry policies."
+  ],
+  "body": "### Why Asynchronous Messaging Matters\nSynchronous HTTP request-reply chains couple services together: if service $C$ is slow or down, services $A$ and $B$ block, exhausting worker threads and causing cascading outages. Message queues decouple this pipeline:\n- **Buffering (Leaky Bucket)**: Queue absorbs a 10x traffic spike while background workers consume at a steady, sustainable pace.\n- **Temporal Decoupling**: Producers can emit messages even if consumer workers are temporarily offline for deployment.\n- **Dead Letter Queue (DLQ)**: Poison pill messages that fail repeatedly after max retries are quarantined for developer inspection without clogging the main queue.",
+  "keyIdea": "Decouple synchronous HTTP chains with asynchronous queues. Treat delivery as 'At-Least-Once' and make all consumer handlers idempotent.",
+  "sim": "messageQueue",
+  "diagramType": "queue",
+  "concepts": [
+    {
+      "title": "Backpressure",
+      "body": "Signaling producers to slow down when downstream consumer queues exceed memory or latency thresholds."
+    },
+    {
+      "title": "Poison Pill Messages",
+      "body": "Malformed messages that crash consumer processes upon receipt, requiring quarantine via DLQs."
+    }
+  ],
+  "examples": [
+    "AWS SQS triggering Lambda workers for background video transcode jobs."
+  ],
+  "resources": [
+    {
+      "title": "Enterprise Integration Patterns",
+      "url": "https://www.enterpriseintegrationpatterns.com/"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "prompt": "What is the purpose of a Dead Letter Queue (DLQ)?",
+      "options": [
+        "To permanently delete expired messages",
+        "To isolate unprocessable messages after repeated retries without halting the pipeline",
+        "To prioritize VIP customer transactions",
+        "To replicate messages across AWS regions"
+      ],
+      "correct": 1,
+      "explanation": "A DLQ captures poison pill messages that fail processing repeatedly, allowing normal traffic to continue unblocked."
+    }
+  ]
+}

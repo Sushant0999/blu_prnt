@@ -1,0 +1,45 @@
+{
+  "id": "cap-theorem",
+  "title": "CAP Theorem & PACELC Model",
+  "intro": "The CAP theorem and PACELC framework define the fundamental trade-offs between consistency, availability, and latency across distributed storage nodes.",
+  "objectives": [
+    "Prove why network partitions (P) are unavoidable physical realities.",
+    "Contrast CP systems (MongoDB, HBase, CockroachDB) with AP systems (Cassandra, DynamoDB).",
+    "Extend CAP using PACELC to evaluate latency vs consistency during normal non-partitioned operations."
+  ],
+  "body": "### Brewer's CAP Theorem\nIn a distributed network where communication delays or severed links (Partition $) can occur, a system can provide at most one of:\n- **Consistency ($)**: Every read returns the most recent write or an error.\n- **Availability ($)**: Every non-failing node returns a non-error response, but without guarantee of latest data.\n\nBecause network partitions cannot be prevented in physical networks, a distributed system must choose between **CP** (reject writes to preserve strict correctness) or **AP** (accept writes on isolated nodes, risking stale reads).\n\n### The PACELC Theorem\nExtends CAP by asking: **I**f there is a **P**artition, trade off **A**vailability vs **C**onsistency; **E**lse (normally), trade off **L**atency vs **C**onsistency.\n- **PA/EL**: DynamoDB, Cassandra (prioritize availability and low latency).\n- **PC/EC**: Spanner, CockroachDB (prioritize consistency at the expense of higher latency).",
+  "keyIdea": "You cannot choose 'CA'. Physical networks will partition. The real decision is how you fail: degrade availability (CP) or serve stale reads (AP).",
+  "concepts": [
+    {
+      "title": "Split-Brain",
+      "body": "When a network partition causes two groups of nodes to each elect their own leader, accepting conflicting writes."
+    },
+    {
+      "title": "Quorum Consensus",
+      "body": "Requiring acknowledgments from a strict majority  = \\lfloor N/2 \rfloor + 1$ prevents split-brain leaders."
+    }
+  ],
+  "examples": [
+    "Cassandra with Local Quorum vs Spanner TrueTime linearizable transactions."
+  ],
+  "resources": [
+    {
+      "title": "CAP Twelve Years Later (Eric Brewer)",
+      "url": "https://www.infoq.com/articles/cap-twelve-years-later-how-the-rules-have-changed/"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "prompt": "What does PACELC stand for?",
+      "options": [
+        "Partition, Availability, Consistency, Error, Latency, Cache",
+        "If Partition (A vs C), Else (Latency vs Consistency)",
+        "Protocol, Asynchronous, Concurrent, Encrypted, Linear, Clock",
+        "Partitioning And Consistent Eventual Ledger Calculation"
+      ],
+      "correct": 1,
+      "explanation": "If Partition: choose between Availability and Consistency; Else: choose between Latency and Consistency."
+    }
+  ]
+}

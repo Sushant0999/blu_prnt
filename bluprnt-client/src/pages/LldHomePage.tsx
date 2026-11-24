@@ -76,10 +76,16 @@ export const LldHomePage: React.FC = () => {
 
           <div className="pt-2 flex flex-wrap gap-3">
             <Link
-              to="/lld/problems"
+              to="/lld/foundations"
               className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 text-white font-bold text-xs shadow-md shadow-cyan-500/25 hover:from-cyan-400 hover:to-indigo-500 transition"
             >
-              Start Problem Bank →
+              OOP & SOLID Foundations →
+            </Link>
+            <Link
+              to="/lld/problems"
+              className="px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-white font-semibold text-xs border border-white/20 transition"
+            >
+              Problem Bank (18)
             </Link>
             <Link
               to="/lld/patterns"
@@ -124,33 +130,57 @@ export const LldHomePage: React.FC = () => {
         </div>
       </div>
 
-      {/* 3 Main Action Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Card 1: Problem Bank */}
+      {/* 4 Main Action Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* Card 1: Foundations */}
+        <Link
+          to="/lld/foundations"
+          className="group p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-cyan-500/50 hover:shadow-xl dark:hover:shadow-cyan-950/20 transition-all duration-200 flex flex-col justify-between"
+        >
+          <div>
+            <div className="w-12 h-12 rounded-2xl bg-cyan-50 dark:bg-cyan-950/60 border border-cyan-200 dark:border-cyan-800 flex items-center justify-center text-cyan-600 dark:text-cyan-400 mb-5 group-hover:scale-105 transition-transform">
+              <Sparkles className="w-6 h-6" />
+            </div>
+
+            <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors">
+              OOP & SOLID Guide
+            </h3>
+            <p className="text-xs text-slate-600 dark:text-slate-400 mt-2 leading-relaxed">
+              Master the 6 UML relationships on an interactive canvas, and study clean architecture refactorings for all 5 SOLID principles.
+            </p>
+          </div>
+
+          <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs font-bold text-cyan-600 dark:text-cyan-400">
+            <span>Explore Foundations</span>
+            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+          </div>
+        </Link>
+
+        {/* Card 2: Problem Bank */}
         <Link
           to="/lld/problems"
           className="group p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-cyan-500/50 hover:shadow-xl dark:hover:shadow-cyan-950/20 transition-all duration-200 flex flex-col justify-between"
         >
           <div>
-            <div className="w-12 h-12 rounded-2xl bg-cyan-50 dark:bg-cyan-950/60 border border-cyan-200 dark:border-cyan-800 flex items-center justify-center text-cyan-600 dark:text-cyan-400 mb-5 group-hover:scale-105 transition-transform">
+            <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 flex items-center justify-center text-indigo-600 dark:text-indigo-400 mb-5 group-hover:scale-105 transition-transform">
               <BookOpen className="w-6 h-6" />
             </div>
 
-            <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors">
+            <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
               LLD Problem Bank
             </h3>
             <p className="text-xs text-slate-600 dark:text-slate-400 mt-2 leading-relaxed">
-              Tackle classic interview challenges like Parking Lot, Vending Machine, and Elevator System with guided requirements and hints.
+              Tackle 18 classic interview challenges with guided requirements, UML canvas modelling, and complete Java reference solutions.
             </p>
           </div>
 
-          <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs font-bold text-cyan-600 dark:text-cyan-400">
+          <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs font-bold text-indigo-600 dark:text-indigo-400">
             <span>Browse {totalProblems} problems</span>
             <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
           </div>
         </Link>
 
-        {/* Card 2: Patterns Library */}
+        {/* Card 3: Patterns Library */}
         <Link
           to="/lld/patterns"
           className="group p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-indigo-500/50 hover:shadow-xl dark:hover:shadow-indigo-950/20 transition-all duration-200 flex flex-col justify-between"

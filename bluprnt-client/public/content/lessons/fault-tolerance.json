@@ -1,0 +1,46 @@
+{
+  "id": "fault-tolerance",
+  "title": "Fault Tolerance & Redundancy Models",
+  "intro": "Fault-tolerant systems anticipate, absorb, and recover from hardware crashes, network severed links, and software bugs without total system collapse.",
+  "objectives": [
+    "Classify failure modes: Crash-Stop, Crash-Recovery, and Byzantine Faults.",
+    "Implement N+2 redundancy, active-passive vs active-active failovers.",
+    "Apply the Bulkhead pattern to prevent single component failures from consuming all resources."
+  ],
+  "body": "### Core Redundancy Models\n- **Active-Passive (Warm/Cold Standby)**: Primary node handles 100% of traffic; secondary replica syncs data and takes over only when primary fails via heartbeat heartbeat fencing. May incur 10-60s failover downtime.\n- **Active-Active (Multi-Master)**: All nodes concurrently serve read and write traffic across multiple availability zones. Requires distributed conflict resolution.\n- **N+2 Redundancy**: System provisions $N$ nodes required for peak traffic plus 2 additional spare nodes to absorb simultaneous node failures and rolling OS upgrades without capacity degradation.",
+  "keyIdea": "Design for failure as a constant reality. Isolate resources with bulkheads and provision N+2 headroom so node crashes cause zero customer degradation.",
+  "diagramType": "faulttolerance",
+  "concepts": [
+    {
+      "title": "Bulkhead Isolation",
+      "body": "Partitioning thread pools, connection pools, and memory so a crash or delay in a non-essential service (e.g. recommendations) cannot freeze checkout processing."
+    },
+    {
+      "title": "Graceful Degradation",
+      "body": "Automatically disabling heavy non-essential features (personalized widgets, animations) to keep core transaction paths responsive during outages."
+    }
+  ],
+  "examples": [
+    "Netflix Chaos Monkey randomly killing production AWS instances to enforce fault resilience."
+  ],
+  "resources": [
+    {
+      "title": "Release It! (Michael Nygard)",
+      "url": "https://pragprog.com/titles/mnee2/release-it-second-edition/"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "prompt": "What does the Bulkhead pattern accomplish in distributed microservices?",
+      "options": [
+        "Compresses network packets",
+        "Isolates critical resource pools so failure in one subsystem does not consume all resources and crash the host process",
+        "Encrypts inter-service communication",
+        "Automatically scales Kubernetes nodes"
+      ],
+      "correct": 1,
+      "explanation": "Like compartments in a ship's hull, bulkheads isolate failures and prevent total process collapse."
+    }
+  ]
+}

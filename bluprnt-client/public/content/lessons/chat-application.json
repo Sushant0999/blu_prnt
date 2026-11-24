@@ -1,0 +1,46 @@
+{
+  "id": "chat-application",
+  "title": "Real-Time Chat Application",
+  "intro": "Design a highly scalable 1-on-1 and group chat system supporting 50M+ concurrent persistent connections, message delivery receipts, and presence tracking.",
+  "objectives": [
+    "Establish stateful WebSocket connection clusters with Redis Pub/Sub backbones.",
+    "Design wide-column message storage (Cassandra/ScyllaDB) partitioned by conversation ID.",
+    "Implement real-time online/offline presence tracking clusters."
+  ],
+  "body": "### Connection Tier & Message Routing\n- **Persistent Connections**: Mobile and web clients maintain bi-directional WebSocket connections terminated at stateless WebSocket Gateway nodes.\n- **User-to-Server Mapping**: A distributed in-memory session registry (Redis Cluster) maps `userId -> gateway_server_id`.\n- **Message Dispatch**: When Alice sends a message to Bob:\n  1. Alice's gateway writes the message to the Message Store (Cassandra) with status `SENT`.\n  2. Gateway queries Redis for Bob's active server.\n  3. If Bob is online, Redis Pub/Sub routes the message to Bob's gateway instance, which pushes it over his open WebSocket.\n  4. If Bob is offline, the gateway enqueues a Mobile Push Notification (FCM/APNs).",
+  "keyIdea": "Use WebSockets for real-time delivery, Redis Pub/Sub for inter-gateway routing, and wide-column storage partitioned by chat room for sequential history reads.",
+  "diagramType": "chat",
+  "concepts": [
+    {
+      "title": "Heartbeat Presence",
+      "body": "Clients emit heartbeats every 30 seconds into Redis with a 60-second TTL. If a heartbeat expires without renewal, user state flips to Offline."
+    },
+    {
+      "title": "Message Delivery Receipts",
+      "body": "Three-stage state machine: Sent (single check), Delivered (double gray checks), Read (double blue checks)."
+    }
+  ],
+  "examples": [
+    "Discord running thousands of Elixir/Erlang BEAM nodes for massive chat guild routing."
+  ],
+  "resources": [
+    {
+      "title": "How Discord Stores Billions of Messages",
+      "url": "https://discord.com/blog/how-discord-stores-billions-of-messages"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "prompt": "Why is Cassandra or ScyllaDB preferred over relational SQL databases for chat message history?",
+      "options": [
+        "Cassandra supports multi-table joins natively",
+        "Cassandra delivers massive sequential write throughput and efficient range scans by message timestamp within a chat room partition",
+        "Cassandra runs natively in browser memory",
+        "SQL databases cannot store UTF-8 emojis"
+      ],
+      "correct": 1,
+      "explanation": "Cassandra's LSM-tree architecture allows high-throughput writes and fast sequential reads partitioned by `(channel_id, message_id)`."
+    }
+  ]
+}

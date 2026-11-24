@@ -1,0 +1,45 @@
+{
+  "id": "api-gateway",
+  "title": "API Gateway & Reverse Proxies",
+  "intro": "An API Gateway acts as the single entry point for client applications, orchestrating routing, protocol translation, authentication, and cross-cutting security.",
+  "objectives": [
+    "Implement centralized authentication, TLS termination, and distributed rate limiting.",
+    "Apply the Backend-For-Frontend (BFF) architectural pattern for mobile and web clients.",
+    "Configure canary traffic splitting and circuit-breaking at the edge tier."
+  ],
+  "body": "### Responsibilities of an API Gateway\nIn a microservices architecture, exposing dozens of internal services directly to mobile or web clients creates tight coupling, security vulnerabilities, and network chattiness. An API Gateway encapsulates internal microservice topology:\n- **Security**: Terminating TLS, validating OAuth2 / JWT bearer tokens, and blocking malicious payloads.\n- **Rate Limiting**: Enforcing token-bucket throttles by IP or API key before requests touch compute tiers.\n- **Protocol Translation**: Translating external REST/JSON HTTP requests into high-speed internal gRPC Protobuf calls.\n- **Canary Routing**: Shifting 5% of user traffic to experimental service versions using header rules.",
+  "keyIdea": "Centralize cross-cutting concerns (auth, rate limiting, telemetry) at the API Gateway so microservices can focus purely on business logic.",
+  "concepts": [
+    {
+      "title": "Backend-for-Frontend (BFF)",
+      "body": "Dedicated lightweight gateways tailored for specific client formats (e.g. mobile BFF optimizing payload size vs desktop web BFF)."
+    },
+    {
+      "title": "Request Aggregation",
+      "body": "The gateway calls multiple downstream microservices in parallel and merges the responses into a single combined payload for mobile clients."
+    }
+  ],
+  "examples": [
+    "Kong / Envoy API Gateway validating JWTs and enforcing Redis rate limits."
+  ],
+  "resources": [
+    {
+      "title": "Pattern: API Gateway (Chris Richardson)",
+      "url": "https://microservices.io/patterns/apigateway.html"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "prompt": "What architectural pattern creates distinct gateway instances tailored specifically for web vs mobile clients?",
+      "options": [
+        "Service Mesh",
+        "Backend-For-Frontend (BFF)",
+        "Strangler Fig",
+        "CQRS"
+      ],
+      "correct": 1,
+      "explanation": "BFF creates client-specific gateways so mobile payloads can be aggressively trimmed for cellular networks."
+    }
+  ]
+}

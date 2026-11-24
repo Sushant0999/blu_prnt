@@ -5,7 +5,11 @@
       "title": "Design a Distributed Unique ID Generator",
       "subtitle": "Generate 64-bit strictly monotonic, roughly time-ordered IDs at 100,000+ QPS without central coordination bottlenecks.",
       "level": "intermediate",
-      "tags": ["Distributed Systems", "Clocks", "High Concurrency"],
+      "tags": [
+        "Distributed Systems",
+        "Clocks",
+        "High Concurrency"
+      ],
       "readMinutes": 12,
       "icon": "Key",
       "functional": [
@@ -18,9 +22,18 @@
         "Clock drift resilience (safe handling of NTP backward time jumps)."
       ],
       "targets": [
-        { "label": "Peak Write Throughput", "value": "150,000 IDs/sec" },
-        { "label": "Max ID Bit Size", "value": "64-bit Long" },
-        { "label": "Clock Epoch Lifespan", "value": "69 years" }
+        {
+          "label": "Peak Write Throughput",
+          "value": "150,000 IDs/sec"
+        },
+        {
+          "label": "Max ID Bit Size",
+          "value": "64-bit Long"
+        },
+        {
+          "label": "Clock Epoch Lifespan",
+          "value": "69 years"
+        }
       ],
       "deepDives": [
         "Twitter Snowflake bit allocation: 1 sign bit + 41-bit millisecond timestamp + 10-bit machine/datacenter ID + 12-bit per-millisecond sequence counter (4,096 IDs/ms per node).",
@@ -37,7 +50,12 @@
       "title": "Design a Real-Time Collaborative Document Editor",
       "subtitle": "Enable multi-user simultaneous document editing with sub-100ms sync and conflict-free convergence.",
       "level": "advanced",
-      "tags": ["CRDT", "WebSockets", "Event Driven", "Consistency"],
+      "tags": [
+        "CRDT",
+        "WebSockets",
+        "Event Driven",
+        "Consistency"
+      ],
       "readMinutes": 18,
       "icon": "FileText",
       "functional": [
@@ -50,8 +68,14 @@
         "Local keystroke latency < 16ms (instant 60fps typing feedback)."
       ],
       "targets": [
-        { "label": "Active Collaborators / Doc", "value": "100 concurrent users" },
-        { "label": "Peer-to-Peer Sync Latency", "value": "< 100ms P95" }
+        {
+          "label": "Active Collaborators / Doc",
+          "value": "100 concurrent users"
+        },
+        {
+          "label": "Peer-to-Peer Sync Latency",
+          "value": "< 100ms P95"
+        }
       ],
       "deepDives": [
         "Operational Transformation (OT) vs Conflict-free Replicated Data Types (CRDT): OT requires a central transformation server (e.g. Google Docs). State-based and operation-based CRDTs (e.g. Yjs, Automerge using RGA trees) allow decentralized peer convergence without central mediation.",
@@ -67,7 +91,12 @@
       "title": "Design a Global Distributed Rate Limiting Service",
       "subtitle": "Enforce per-tenant throughput budgets across distributed API gateways with minimal latency overhead.",
       "level": "intermediate",
-      "tags": ["Rate Limiting", "Redis", "Resilience", "API Gateway"],
+      "tags": [
+        "Rate Limiting",
+        "Redis",
+        "Resilience",
+        "API Gateway"
+      ],
       "readMinutes": 14,
       "icon": "ShieldCheck",
       "functional": [
@@ -80,8 +109,14 @@
         "Soft-fail behavior: If rate limiting cluster becomes unreachable, fail open to avoid blackholing traffic."
       ],
       "targets": [
-        { "label": "Inspection QPS", "value": "1,000,000 req/sec" },
-        { "label": "Max Evaluation Latency", "value": "1.5ms P99" }
+        {
+          "label": "Inspection QPS",
+          "value": "1,000,000 req/sec"
+        },
+        {
+          "label": "Max Evaluation Latency",
+          "value": "1.5ms P99"
+        }
       ],
       "deepDives": [
         "Local gateway token caching with batch synchronization to central Redis cluster to reduce remote round trips.",
@@ -91,6 +126,236 @@
         "Executing naive `GET` then `SET` in Redis, causing critical race conditions under concurrent client bursts."
       ],
       "seniorNotes": "Address cross-region rate synchronization latency: rather than synchronizing every single token across oceanic links, partition the global quota across regions proportionally to historical regional traffic."
+    },
+    {
+      "id": "url-shortener-case",
+      "title": "Design a Global URL Shortener (TinyURL)",
+      "subtitle": "Convert billions of long URLs into compact 7-character aliases with sub-10ms redirection and 100:1 read-to-write scale.",
+      "level": "beginner",
+      "tags": [
+        "Caching",
+        "Base62",
+        "High Availability",
+        "Hashing"
+      ],
+      "readMinutes": 10,
+      "icon": "Globe",
+      "functional": [
+        "Given a long URL, generate a compact 7-character alias.",
+        "When a user accesses the short link, redirect to the original destination.",
+        "Support optional custom alias names and expiration dates (default 5 years)."
+      ],
+      "nonFunctional": [
+        "Redirection latency < 15ms P99 globally.",
+        "High availability: 99.99% uptime with read requests unaffected by write outages."
+      ],
+      "targets": [
+        {
+          "label": "Write Throughput",
+          "value": "1,160 writes/sec (100M/day)"
+        },
+        {
+          "label": "Read Throughput",
+          "value": "116,000 reads/sec (100:1 ratio)"
+        },
+        {
+          "label": "5-Year URL Storage",
+          "value": "180 Billion URLs (~90 TB)"
+        }
+      ],
+      "deepDives": [
+        "Base62 encoding of 64-bit distributed IDs avoids hash collisions and costly database existence queries.",
+        "Caching the top 20% most active links in Redis satisfies 99% of read requests directly from RAM."
+      ],
+      "commonMistakes": [
+        "Using MD5 truncated hashes, leading to collisions that force serial retry queries.",
+        "Using 301 redirects when click analytics and tracking are required."
+      ],
+      "seniorNotes": "At senior staff level, discuss multi-region replication. Deploy Redis read-replicas in regional edge datacenters; short URL reads are served locally while writes synchronize asynchronously via Kafka."
+    },
+    {
+      "id": "real-time-chat-case",
+      "title": "Design a Real-Time Scalable Chat Application (WhatsApp/Slack)",
+      "subtitle": "Support 50M+ concurrent WebSocket connections with end-to-end encryption, 1-on-1 and group messaging, and presence.",
+      "level": "advanced",
+      "tags": [
+        "WebSockets",
+        "Presence",
+        "Cassandra",
+        "PubSub"
+      ],
+      "readMinutes": 16,
+      "icon": "Layers",
+      "functional": [
+        "Support 1-on-1 and group chat rooms with real-time text delivery.",
+        "Provide message state tracking: Sent, Delivered, and Read receipts.",
+        "Track real-time online/offline presence status."
+      ],
+      "nonFunctional": [
+        "Message delivery latency < 100ms globally.",
+        "Zero lost messages with offline storage and push notification fallback."
+      ],
+      "targets": [
+        {
+          "label": "Concurrent Connections",
+          "value": "50,000,000 WebSockets"
+        },
+        {
+          "label": "Daily Messages",
+          "value": "10 Billion messages/day"
+        },
+        {
+          "label": "Delivery Latency",
+          "value": "< 50ms P95"
+        }
+      ],
+      "deepDives": [
+        "Stateless WebSocket gateways paired with Redis session registries mapping user_id to active gateway server.",
+        "Wide-column message storage (Cassandra/ScyllaDB) partitioned by conversation_id with clustering on message timestamp."
+      ],
+      "commonMistakes": [
+        "Maintaining stateful session data on gateway nodes without a distributed registry, preventing horizontal failover.",
+        "Using HTTP short polling instead of persistent WebSocket bi-directional streams."
+      ],
+      "seniorNotes": "For massive group chats (10,000+ members), fan-out on write into 10,000 queues exhausts memory. Transition to fan-out on read with cursors, where clients pull from the channel log upon opening."
+    },
+    {
+      "id": "news-feed-case",
+      "title": "Design a Scalable News Feed & Timeline (Twitter/Instagram)",
+      "subtitle": "Generate personalized timelines for hundreds of millions of users balancing extreme celebrity fan-out with instant scrolling.",
+      "level": "advanced",
+      "tags": [
+        "Fan-Out",
+        "Redis",
+        "Ranking",
+        "Scalability"
+      ],
+      "readMinutes": 15,
+      "icon": "Cpu",
+      "functional": [
+        "Users can publish posts (text, images) to their followers.",
+        "Users view an aggregated chronological and ranked timeline of followee posts.",
+        "Support pagination and real-time feed updates."
+      ],
+      "nonFunctional": [
+        "Feed generation latency < 200ms.",
+        "High availability with eventual consistency for new posts."
+      ],
+      "targets": [
+        {
+          "label": "DAU",
+          "value": "300,000,000 users"
+        },
+        {
+          "label": "Post QPS",
+          "value": "15,000 posts/sec"
+        },
+        {
+          "label": "Feed Read QPS",
+          "value": "300,000 reads/sec"
+        }
+      ],
+      "deepDives": [
+        "Hybrid fan-out: push (fan-out on write) for regular users (<25k followers); pull (fan-out on read) for celebrities to avoid write amplification.",
+        "Redis Sorted Sets (ZSET) caching the top 800 post IDs with epoch timestamps as scores."
+      ],
+      "commonMistakes": [
+        "Pushing celebrity posts to 80 million follower caches on write, causing catastrophic worker queue collapse.",
+        "Executing complex multi-table SQL joins at read time across 500 followees."
+      ],
+      "seniorNotes": "Address inactive users: do not precompute timeline caches for users who have not logged in for 14 days. Reconstruct their timeline on demand upon login to save petabytes of Redis RAM."
+    },
+    {
+      "id": "ecommerce-order-case",
+      "title": "Design an E-Commerce Flash-Sale Order Pipeline",
+      "subtitle": "Handle flash-sale surges with 100,000+ concurrent checkout requests without overselling inventory.",
+      "level": "advanced",
+      "tags": [
+        "Saga",
+        "Distributed Transactions",
+        "Inventory",
+        "Redis"
+      ],
+      "readMinutes": 14,
+      "icon": "ShieldCheck",
+      "functional": [
+        "Users place orders with items reserved temporarily during checkout.",
+        "Process payments securely and release expired inventory reservations.",
+        "Enforce zero overselling of limited-stock items."
+      ],
+      "nonFunctional": [
+        "Strict consistency for item inventory counters.",
+        "Checkout throughput > 20,000 orders/sec during surge events."
+      ],
+      "targets": [
+        {
+          "label": "Surge Write QPS",
+          "value": "25,000 orders/sec"
+        },
+        {
+          "label": "Inventory Accuracy",
+          "value": "100% (Zero oversell)"
+        },
+        {
+          "label": "Reservation TTL",
+          "value": "15 minutes"
+        }
+      ],
+      "deepDives": [
+        "Atomic inventory decrement in single-threaded Redis via Lua scripts, bypassing relational database row locks.",
+        "Saga Orchestration pattern coordinating Order, Payment, and Inventory services with automated compensating transactions."
+      ],
+      "commonMistakes": [
+        "Using standard relational SQL transactions with row locks, freezing database connection pools under concurrent load.",
+        "Failing to implement compensating inventory restoration on payment failure."
+      ],
+      "seniorNotes": "Implement virtual waiting rooms (token bucket admission) at the CDN edge so excess flash traffic is metered into checkout queues rather than collapsing backend services."
+    },
+    {
+      "id": "uber-dispatch-case",
+      "title": "Design a Geospatial Ride Matching & Dispatch Platform (Uber)",
+      "subtitle": "Process real-time driver GPS telemetry and match riders with optimal nearby drivers with sub-second response times.",
+      "level": "advanced",
+      "tags": [
+        "Geospatial",
+        "H3",
+        "WebSockets",
+        "Dispatch"
+      ],
+      "readMinutes": 16,
+      "icon": "Globe",
+      "functional": [
+        "Drivers stream location pings every 4 seconds.",
+        "Riders request a ride and view estimated pickup time (ETA) and fare.",
+        "System dispatches the optimal nearby driver in real time."
+      ],
+      "nonFunctional": [
+        "Driver location ingestion latency < 500ms.",
+        "Dispatch matching latency < 2 seconds."
+      ],
+      "targets": [
+        {
+          "label": "Active Drivers",
+          "value": "5,000,000 worldwide"
+        },
+        {
+          "label": "Telemetry Ingestion",
+          "value": "1,250,000 GPS pings/sec"
+        },
+        {
+          "label": "Spatial Index Resolution",
+          "value": "H3 Hex Level 8 (~460m)"
+        }
+      ],
+      "deepDives": [
+        "Hierarchical hexagonal spatial indexing (Uber H3) enables O(1) adjacent cell lookups without trigonometric spherical distance scans.",
+        "Bipartite batch matching: aggregating ride requests over 5-second windows to optimize global driver-rider travel time."
+      ],
+      "commonMistakes": [
+        "Querying SQL database tables using Haversine formula on raw (lat, lon) coordinates on every query.",
+        "Matching riders greedily to the nearest driver, creating starvation in congested city centers."
+      ],
+      "seniorNotes": "Discuss dynamic surge pricing: compute real-time demand-to-supply ratio per H3 hexagonal cell and smooth multipliers across neighboring cells using Gaussian blur to avoid pricing cliffs across street corners."
     }
   ]
 }

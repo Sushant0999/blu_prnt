@@ -1,0 +1,47 @@
+{
+  "id": "key-value-store",
+  "title": "Distributed Key-Value Store",
+  "intro": "Master the design of a globally distributed, fault-tolerant key-value store modeled on Amazon's foundational Dynamo paper.",
+  "objectives": [
+    "Implement consistent hashing with virtual nodes for uniform data distribution.",
+    "Formulate quorum read/write equations ($R + W > N$) for tunable consistency.",
+    "Resolve concurrent write conflicts using Vector Clocks and Read Repair."
+  ],
+  "body": "### The Dynamo Architecture Playbook\nA distributed key-value store provides two simple operations: `get(key)` and `put(key, value)`, but scales across thousands of nodes worldwide:\n- **Partitioning**: Consistent Hashing Ring with virtual nodes (vnodes) to prevent hot-spot skew.\n- **Replication**: The coordinator node replicates keys to the $N$ successive physical nodes clockwise on the ring.\n- **Tunable Quorum**: Configure replica count $N$, read quorum $R$, and write quorum $W$. When $R + W > N$, the read quorum is mathematically guaranteed to overlap with the write quorum by at least one node, providing strong consistency.\n- **Sloppy Quorum & Hinted Handoff**: If designated replica nodes are temporarily unreachable during network partitioning, healthy peer nodes temporarily accept writes and hand them back once the primary recovers.",
+  "keyIdea": "Tunable quorums ($R + W > N$) allow engineers to dynamically dial between sub-millisecond write latency ($W=1$) and strict read consistency ($R+W>N$).",
+  "sim": "consistent-hashing",
+  "diagramType": "dynamo",
+  "concepts": [
+    {
+      "title": "Read Repair",
+      "body": "When a client reads from $R$ nodes and detects conflicting version timestamps, the coordinator immediately writes the latest version back to the stale nodes in the background."
+    },
+    {
+      "title": "Anti-Entropy with Merkle Trees",
+      "body": "Nodes compare cryptographic hash trees of their key ranges to synchronize missing data with minimal network payload transfer."
+    }
+  ],
+  "examples": [
+    "Amazon DynamoDB and Apache Cassandra distributed storage engines."
+  ],
+  "resources": [
+    {
+      "title": "Dynamo: Amazon's Highly Available Key-value Store",
+      "url": "https://www.allthingsdistributed.com/2007/10/amazons_dynamo.html"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "prompt": "In a distributed key-value store with replication factor N=3, what values of R (read quorum) and W (write quorum) guarantee strong consistency?",
+      "options": [
+        "R=1, W=1",
+        "R=1, W=2",
+        "R=2, W=2",
+        "R=3, W=0"
+      ],
+      "correct": 2,
+      "explanation": "When R=2 and W=2, R + W = 4 > 3 (N), guaranteeing that the read set intersects with at least one node from the write set."
+    }
+  ]
+}

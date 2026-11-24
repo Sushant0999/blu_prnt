@@ -1,0 +1,46 @@
+{
+  "id": "url-shortener",
+  "title": "Global URL Shortener (TinyURL)",
+  "intro": "Design a globally available URL shortener that converts long web URLs into compact 7-character aliases at 100:1 read-to-write scale.",
+  "objectives": [
+    "Generate short keys using Base62 bijective encoding over 64-bit distributed IDs.",
+    "Evaluate 301 Permanent Redirect (browser caches, zero server load) vs 302 Temporary Redirect (analytics tracking).",
+    "Cache top 20% hot links in Redis to satisfy 99% of read requests sub-millisecond."
+  ],
+  "body": "### Capacity & Math\n- **Write Traffic**: 100M URLs created/day $\\approx 1,160$ write QPS.\n- **Read Traffic**: 100:1 read-write ratio $\\approx 116,000$ read QPS.\n- **Key Space**: Using alphanumeric characters $[a-z, A-Z, 0-9]$ gives 62 symbols. A 7-character short URL supports:\n\n$$62^7 \\approx 3.52 \\times 10^{12} \\text{ (3.5 Trillion unique URLs)}$$\n\n### Encoding Strategy\nAvoid hashing (MD5/SHA256 truncated) as it produces hash collisions requiring expensive database existence lookups. Instead, use a **Distributed ID Generator** (Snowflake or counter range allocation) to obtain a globally unique 64-bit integer, and convert it directly to Base62 string representation.",
+  "keyIdea": "Use a distributed unique ID generator combined with Base62 encoding to eliminate hash collisions completely. Offload 99% of reads using Redis and CDN edge caching.",
+  "diagramType": "urlshortener",
+  "concepts": [
+    {
+      "title": "301 vs 302 Redirection",
+      "body": "301 redirects are cached permanently by browsers (bypassing your servers on subsequent clicks). 302 redirects force requests through your server every time, essential for click tracking and analytics."
+    },
+    {
+      "title": "Cache Eviction",
+      "body": "Standard LRU cache retaining the most recently accessed links handles skewed virality distributions perfectly."
+    }
+  ],
+  "examples": [
+    "bit.ly and t.co shortening billions of links."
+  ],
+  "resources": [
+    {
+      "title": "System Design Interview - URL Shortener",
+      "url": "https://bytebytego.com/"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "prompt": "Why is Base62 conversion of a distributed ID superior to truncating an MD5 hash?",
+      "options": [
+        "Base62 encrypts the original URL",
+        "Bijective Base62 conversion guarantees zero hash collisions",
+        "MD5 cannot support uppercase letters",
+        "Base62 runs entirely in CPU cache"
+      ],
+      "correct": 1,
+      "explanation": "Converting a unique 64-bit integer to Base62 is a 1-to-1 mathematical mapping with 0% chance of collision."
+    }
+  ]
+}

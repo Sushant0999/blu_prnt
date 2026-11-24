@@ -1,0 +1,46 @@
+{
+  "id": "system-security",
+  "title": "Security in System Design",
+  "intro": "Embed zero-trust defense-in-depth principles across all architectural tiers, encompassing network boundaries, cryptographic identity, and data protection.",
+  "objectives": [
+    "Enforce Mutual TLS (mTLS) and SPIFFE identities for service-to-service communication.",
+    "Validate stateless JWT tokens with asymmetric public key cryptography (RS256/EdDSA).",
+    "Mitigate OWASP Top 10 vulnerabilities (SQLi, XSS, SSRF) using Web Application Firewalls (WAF)."
+  ],
+  "body": "### Defense-in-Depth Tiers\n1. **Edge & Ingress**: Cloudflare / AWS WAF filtering SQL injection, Cross-Site Scripting (XSS), and Layer 7 volumetric DDoS attacks.\n2. **Network Perimeter**: Private VPC subnets. Database nodes placed in private isolated subnets with zero public internet IP addresses.\n3. **Service Mesh Zero-Trust**: Never trust internal datacenter networks. Enforce **Mutual TLS (mTLS)**: both client and server authenticate each other using x509 cryptographic certificates.\n4. **Authentication & Authorization**: API Gateway validates OAuth2 / OIDC JSON Web Tokens (JWT). Asymmetric signing (RS256) allows microservices to verify authenticity using public keys without querying a centralized auth database.\n5. **Data Protection**: Encryption at rest (AES-256 with AWS KMS envelope encryption) and column-level encryption for sensitive PII (credit cards, social security numbers).",
+  "keyIdea": "Assume internal network compromise. Enforce zero-trust with mTLS, sign APIs with HMAC/JWT, and encrypt sensitive data both in transit and at rest.",
+  "diagramType": "security",
+  "concepts": [
+    {
+      "title": "Envelope Encryption",
+      "body": "Encrypting plaintext data with a unique Data Encryption Key (DEK), and encrypting the DEK with a master Key Encryption Key (KEK) managed in HSM hardware."
+    },
+    {
+      "title": "HMAC Request Signing",
+      "body": "Clients sign request payloads with a shared secret (`HMAC-SHA256(payload, secret)`). Prevents replay attacks and data tampering in transit."
+    }
+  ],
+  "examples": [
+    "Istio service mesh automating mTLS certificate rotation across Kubernetes pods."
+  ],
+  "resources": [
+    {
+      "title": "NIST Zero Trust Architecture (SP 800-207)",
+      "url": "https://csrc.nist.gov/publications/detail/sp/800-207/final"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "prompt": "Why is asymmetric JWT signing (RS256) superior to symmetric signing (HS256) in microservice architectures?",
+      "options": [
+        "RS256 tokens are shorter",
+        "Downstream microservices can verify tokens using the public key without needing access to the secret private key",
+        "HS256 requires internet access to verify",
+        "RS256 runs without CPU cycles"
+      ],
+      "correct": 1,
+      "explanation": "With RS256, only the auth server holds the private signing key. Microservices verify signatures using the public key, so a compromised service cannot forge tokens."
+    }
+  ]
+}

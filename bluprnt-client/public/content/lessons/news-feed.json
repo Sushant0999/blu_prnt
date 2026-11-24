@@ -1,0 +1,46 @@
+{
+  "id": "news-feed",
+  "title": "News Feed / Timeline Architecture",
+  "intro": "Design a real-time social timeline system (Twitter/Instagram) generating customized content feeds for hundreds of millions of users.",
+  "objectives": [
+    "Evaluate Fan-Out-On-Write (Push model) vs Fan-Out-On-Read (Pull model).",
+    "Architect hybrid models mitigating celebrity 'hotkey' fan-out bottlenecks.",
+    "Structure multi-tier Redis timeline caches for sub-10ms feed rendering."
+  ],
+  "body": "### Fan-Out Models Compared\n\n#### 1. Fan-Out on Write (Push Model)\nWhen user Alice posts a photo, background workers immediately append the post ID into the timeline feed caches of all Alice's followers.\n- **Pros**: Reading the feed is lightning-fast ($O(1)$ read from follower's pre-computed Redis list).\n- **Cons**: Severe bottleneck for celebrity users with 50M+ followers (one post triggers 50 million write operations).\n\n#### 2. Fan-Out on Read (Pull Model)\nFollowers fetch posts on demand by querying their followees' latest posts and merging them in memory at read time.\n- **Pros**: Zero write amplification on posting.\n- **Cons**: Generating the feed is slow ($O(N)$ multi-query merge on every refresh).\n\n### The Industry Hybrid Architecture\n- Use **Push (Fan-out on write)** for standard users ($< 25,000$ followers).\n- Use **Pull (Fan-out on read)** for celebrities: do not push celebrity posts to follower caches. Instead, merge celebrity posts dynamically into the user's feed upon request.",
+  "keyIdea": "Use a hybrid fan-out model: push for regular users to keep reads $O(1)$; pull for celebrities to eliminate catastrophic write amplification.",
+  "diagramType": "newsfeed",
+  "concepts": [
+    {
+      "title": "Redis Timeline Lists",
+      "body": "Storing the top 800 post IDs in a Redis Sorted Set (ZSET) with timestamp scores delivers instant feed scrolling."
+    },
+    {
+      "title": "Rank Scoring Engine",
+      "body": "Machine learning ranking service scoring candidate post IDs based on engagement probability, affinity, and recency."
+    }
+  ],
+  "examples": [
+    "Twitter/X timeline architecture transitioning to hybrid fanout."
+  ],
+  "resources": [
+    {
+      "title": "Timelines at Scale (Twitter Engineering)",
+      "url": "https://blog.twitter.com/engineering/en_us/topics/infrastructure/2017/the-infrastructure-behind-twitter-scale"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "prompt": "Why does a pure Push (Fan-Out on Write) model fail when a celebrity with 80M followers posts a tweet?",
+      "options": [
+        "Followers\\' phones crash from notifications",
+        "A single write generates 80 million concurrent cache writes, causing massive queue lag and worker thread starvation",
+        "The tweet exceeds 280 characters",
+        "Redis cannot store more than 10,000 items"
+      ],
+      "correct": 1,
+      "explanation": "The extreme write amplification of 80M writes per post overwhelms message queues and background worker pools."
+    }
+  ]
+}

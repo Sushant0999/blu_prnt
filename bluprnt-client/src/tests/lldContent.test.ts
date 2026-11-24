@@ -11,8 +11,8 @@ describe('lldContent', () => {
   const problemIds = new Set(problems.map((p) => p.id));
   const patternIds = new Set(patterns.map((p) => p.id));
 
-  it('contains at least 6 seed problems with full required attributes', () => {
-    expect(problems.length).toBeGreaterThanOrEqual(6);
+  it('contains all 18 target problems with full required attributes', () => {
+    expect(problems.length).toBeGreaterThanOrEqual(18);
     for (const p of problems) {
       expect(p.id).toBeTruthy();
       expect(p.title).toBeTruthy();

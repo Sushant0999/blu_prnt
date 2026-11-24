@@ -1,0 +1,46 @@
+{
+  "id": "latency-throughput",
+  "title": "Latency vs Throughput & Tail Latency",
+  "intro": "System performance is governed by two complementary metrics: Latency (time to complete a unit of work) and Throughput (rate at which work is completed).",
+  "objectives": [
+    "Apply Little's Law ( = \\lambda W$) to compute concurrency and queue capacity.",
+    "Analyze why arithmetic averages hide tail latency and why P99/P99.9 matter.",
+    "Mitigate tail amplification in parallel fan-out microservice architectures."
+  ],
+  "body": "### Little's Law\nLittle's Law states that the average number of requests $ in a stable system equals the arrival rate $\\lambda$ multiplied by the average latency $:\n\n23L = \\lambda \times W23\n\nFor example, if a service processes 10,000 req/sec ($\\lambda$) with an average latency of 50ms (bash.05s$), the concurrent in-flight requests in the system is  = 10,000 \times 0.05 = 500$ concurrent requests.\n\n### Tail Latency Amplification\nIn a distributed system, a single user request often fans out to $ backend microservices in parallel. If each service has a 1% chance of experiencing a P99 latency spike (99% fast), the probability that the user request experiences a spike is:\n\n23P(\text{user hits slow service}) = 1 - (1 - 0.01)^N23\n\nWith =20$ services,  - 0.99^{20} \u0007pprox 18.2\\%$ of user requests suffer tail latency!",
+  "keyIdea": "Averages lie; tail latency governs user happiness. In parallel fan-out systems, tail latencies compound exponentially.",
+  "concepts": [
+    {
+      "title": "Hedged Requests",
+      "body": "Issuing a duplicate redundant request to a replica after the P95 timeout threshold to race the slower one."
+    },
+    {
+      "title": "HDR Histograms",
+      "body": "High Dynamic Range histograms record latency measurements with microsecond precision across arbitrary orders of magnitude."
+    }
+  ],
+  "examples": [
+    "Google search issuing duplicate query replicas to eliminate tail latency.",
+    "Netflix Hystrix isolating thread pools to prevent tail latency cascades."
+  ],
+  "resources": [
+    {
+      "title": "The Tail at Scale (Dean & Barroso)",
+      "url": "https://research.google/pubs/pub40801/"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "prompt": "If a service receives 5,000 RPS and takes 20ms on average to process a request, how many concurrent requests are in flight?",
+      "options": [
+        "50",
+        "100",
+        "250",
+        "1,000"
+      ],
+      "correct": 1,
+      "explanation": "By Little's Law: L = 5000 * 0.02 = 100 concurrent requests."
+    }
+  ]
+}

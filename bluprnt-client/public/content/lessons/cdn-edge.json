@@ -1,0 +1,46 @@
+{
+  "id": "cdn-edge",
+  "title": "Content Delivery Networks (CDN)",
+  "intro": "A Content Delivery Network (CDN) is a globally distributed network of Point of Presence (PoP) edge servers that caches assets close to end users.",
+  "objectives": [
+    "Evaluate Anycast GeoDNS routing and BGP latency optimization.",
+    "Formulate cache invalidation strategies using surrogate keys and versioned URLs.",
+    "Leverage stale-while-revalidate and origin shielding to eliminate origin stampedes."
+  ],
+  "body": "### How CDNs Slash Latency\nTranscontinental internet latency is bounded by the speed of light in fiber (~5ms per 1,000 km). Round-trips between Tokyo and Virginia take ~160ms. By caching static assets (images, JavaScript, CSS) and pre-rendered API responses at regional Edge PoPs, response times drop to < 15ms.\n\n### Origin Shielding & Tiered Caching\nWhen hundreds of regional PoPs miss simultaneously, the origin server faces a devastating stampede. An **Origin Shield** introduces an intermediate parent cache tier that consolidates regional edge misses, collapsing 100 origin queries into a single origin request.",
+  "keyIdea": "The fastest request is the one that never hits your datacenter. Offload 90%+ of ingress traffic at the edge using Anycast and surrogate caching headers.",
+  "concepts": [
+    {
+      "title": "Anycast Routing",
+      "body": "Multiple physical PoPs across the globe advertise the exact same IP address via BGP. Internet routers automatically route client packets to the topologically closest PoP."
+    },
+    {
+      "title": "Stale-While-Revalidate",
+      "body": "Edge immediately returns cached stale data to the client while asynchronously fetching fresh content from the origin in the background."
+    }
+  ],
+  "examples": [
+    "Cloudflare Edge caching dynamic responses with Cache-Tag invalidation.",
+    "Netflix Open Connect CDN appliances deployed directly inside ISP datacenters."
+  ],
+  "resources": [
+    {
+      "title": "RFC 5861 - HTTP Cache-Control Extensions",
+      "url": "https://datatracker.ietf.org/doc/html/rfc5861"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "prompt": "What does an Origin Shield protect against?",
+      "options": [
+        "DDoS attacks on client browsers",
+        "Cache misses across hundreds of regional PoPs swamping the primary backend database",
+        "SSL certificate expiration",
+        "BGP route poisoning"
+      ],
+      "correct": 1,
+      "explanation": "An Origin Shield aggregates cache misses across edge PoPs so the primary origin receives only one consolidated fetch."
+    }
+  ]
+}

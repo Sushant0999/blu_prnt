@@ -1,0 +1,46 @@
+{
+  "id": "service-discovery",
+  "title": "Service Discovery & Health Checking",
+  "intro": "In ephemeral containerized environments (Kubernetes, auto-scaled clouds), service discovery dynamically tracks live IP addresses and port bindings of microservice instances.",
+  "objectives": [
+    "Compare Client-Side Discovery (Netflix Eureka) with Server-Side Discovery (AWS ALB / Kubernetes CoreDNS).",
+    "Configure heartbeat leases, TTLs, and consensus-backed service registries (Consul / ZooKeeper).",
+    "Mitigate cascading node failure loops using exponential dampening."
+  ],
+  "body": "### Client-Side vs Server-Side Discovery\n- **Client-Side Discovery**: Service client queries the Service Registry (Consul, Eureka) directly, obtains the list of available IP addresses, and applies local load balancing algorithms (Round Robin, Least Response Time). Fewer network hops, but couples client libraries to registry technology.\n- **Server-Side Discovery**: Service client issues requests to a stable DNS name or reverse proxy (Kubernetes Service / AWS ALB). The proxy queries the registry and routes traffic to backend pods. Language-agnostic, but adds an intermediate proxy hop.",
+  "keyIdea": "Automate IP registration and deregistration in dynamic cloud clusters. Pair heartbeat TTLs with self-preservation modes to prevent network blips from wiping healthy registries.",
+  "diagramType": "servicediscovery",
+  "concepts": [
+    {
+      "title": "Heartbeat Leases",
+      "body": "Instances send heartbeat pings every 10s. If 3 consecutive heartbeats are missed, the registry marks the node unhealthy and deregisters it."
+    },
+    {
+      "title": "Eureka Self-Preservation Mode",
+      "body": "If sudden network partitions cause > 15% of nodes to drop heartbeats simultaneously, Eureka halts deregistration to avoid wiping the entire cluster."
+    }
+  ],
+  "examples": [
+    "Kubernetes CoreDNS resolving `order-service.default.svc.cluster.local` to active pod IPs."
+  ],
+  "resources": [
+    {
+      "title": "Service Discovery in a Microservices Architecture",
+      "url": "https://www.nginx.com/blog/service-discovery-in-a-microservices-architecture/"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "prompt": "What triggers Eureka's Self-Preservation mode?",
+      "options": [
+        "CPU usage exceeding 90%",
+        "A sudden drop in overall heartbeats (>15%) indicating a network partition rather than true node crashes",
+        "A new pod deployment",
+        "SSL certificate invalidation"
+      ],
+      "correct": 1,
+      "explanation": "Self-preservation prevents catastrophic deregistration of healthy nodes during cross-datacenter network blips."
+    }
+  ]
+}

@@ -1,0 +1,45 @@
+{
+  "id": "api-protocols",
+  "title": "REST vs gRPC vs GraphQL",
+  "intro": "Selecting the optimal communication protocol between clients, gateways, and internal services defines network bandwidth efficiency, schema contracts, and developer velocity.",
+  "objectives": [
+    "Compare REST (HTTP/1.1 JSON), gRPC (HTTP/2 Protobuf), and GraphQL (declarative queries).",
+    "Evaluate payload serialization benchmarks: JSON text parsing vs Protobuf binary encoding.",
+    "Mitigate the GraphQL N+1 database problem using DataLoader batching."
+  ],
+  "body": "### Protocol Comparison Matrix\n\n| Feature | REST | gRPC | GraphQL |\n| :--- | :--- | :--- | :--- |\n| **Transport** | HTTP/1.1 or HTTP/2 | HTTP/2 Multiplexed | HTTP/1.1 or HTTP/2 |\n| **Data Format** | JSON (Text) | Protocol Buffers (Binary) | JSON (Text) |\n| **Schema Contract** | OpenAPI (Optional) | Strict `.proto` files (Enforced) | GraphQL Schema AST |\n| **Performance** | Moderate (Text parsing) | Ultra-Fast (Binary, compact) | Moderate (Query parsing AST) |\n| **Best Used For** | Public 3rd-party APIs | Internal Microservices | Complex UI / Mobile Apps |\n\n### Why gRPC Dominates Internal Microservices\nProtocol Buffers serializes data into dense binary streams up to 80% smaller than JSON. Because fields are mapped by numeric integer tags rather than text string keys, CPU serialization and deserialization overhead is reduced by $5\\times$ to $10\\times$.",
+  "keyIdea": "Use gRPC for high-throughput, low-latency service-to-service calls; use REST for public developer APIs; use GraphQL for rich, client-driven UI applications.",
+  "concepts": [
+    {
+      "title": "Over-fetching and Under-fetching",
+      "body": "REST endpoints often return superfluous data (over-fetching) or require multiple round-trips to assemble a view (under-fetching). GraphQL solves this by letting clients declare exact required fields."
+    },
+    {
+      "title": "DataLoader",
+      "body": "A batching and caching utility that coalesces individual database queries into a single `SELECT WHERE id IN (...)`, eliminating the N+1 problem."
+    }
+  ],
+  "examples": [
+    "Netflix transitioning internal service communication from REST to gRPC for microsecond efficiency."
+  ],
+  "resources": [
+    {
+      "title": "gRPC Documentation & Benchmarks",
+      "url": "https://grpc.io/docs/"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "prompt": "Why is gRPC significantly faster than standard REST over JSON?",
+      "options": [
+        "It encrypts data with 512-bit keys",
+        "Binary Protobuf encoding and HTTP/2 stream multiplexing slash serialization and network overhead",
+        "It runs over UDP instead of TCP",
+        "It eliminates database queries completely"
+      ],
+      "correct": 1,
+      "explanation": "Binary Protocol Buffers serialization and HTTP/2 multiplexing eliminate text parsing overhead and connection churn."
+    }
+  ]
+}

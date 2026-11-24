@@ -1,0 +1,47 @@
+{
+  "id": "circuit-breakers",
+  "title": "Retries & Circuit Breakers",
+  "intro": "Protect downstream dependencies and prevent cascading distributed failures using adaptive retry backoff algorithms and stateful circuit breakers.",
+  "objectives": [
+    "Model the 3 states of a Circuit Breaker: Closed, Open, and Half-Open.",
+    "Implement Exponential Backoff with Full Jitter to eliminate retry storms.",
+    "Configure fallback responses (cache reads, static defaults) on tripped circuits."
+  ],
+  "body": "### The Circuit Breaker State Machine\n1. **Closed**: Normal operations. Requests pass through to downstream service. Failure count is tracked over a sliding time window.\n2. **Open**: If failure rate exceeds threshold (e.g. 50% errors over 10 seconds), the circuit trips to **Open**. All subsequent requests fail fast immediately without hitting downstream, sparing the struggling service.\n3. **Half-Open**: After a cooldown sleep window (e.g. 30 seconds), circuit permits a small canary fraction of requests through. If canary calls succeed, circuit resets to **Closed**; if they fail, circuit flips back to **Open**.\n\n### Exponential Backoff with Full Jitter\nRetrying immediately upon failure causes **retry storms (thundering herds)**. Always add randomness (jitter):\n\n$$\\text{sleep} = \\text{random}(0, \\min(\\text{cap}, \\text{base} \\times 2^{\\text{attempt}}))$$",
+  "keyIdea": "Fail fast when downstream is drowning. Exponential backoff with jitter prevents retry avalanches; circuit breakers give downstream services breathing room to recover.",
+  "sim": "circuitBreaker",
+  "diagramType": "circuitbreaker",
+  "concepts": [
+    {
+      "title": "Thundering Herd (Retry Storm)",
+      "body": "When thousands of client requests retry at the exact same millisecond interval, creating periodic shockwaves that repeatedly knock recovering servers back offline."
+    },
+    {
+      "title": "Fallback Cache",
+      "body": "Returning cached stale data or generic defaults when the circuit is Open, preserving partial user functionality."
+    }
+  ],
+  "examples": [
+    "Resilience4j and Envoy distributed circuit breaker filters."
+  ],
+  "resources": [
+    {
+      "title": "Exponential Backoff and Jitter (AWS Architecture Blog)",
+      "url": "https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "prompt": "Why is \\'Full Jitter\\' added to exponential backoff algorithms?",
+      "options": [
+        "To increase payload compression",
+        "To decorrelate retry timestamps across clients, preventing periodic synchronized traffic spikes (retry storms)",
+        "To bypass HTTPS TLS handshakes",
+        "To prioritize mobile clients over desktop clients"
+      ],
+      "correct": 1,
+      "explanation": "Jitter spreads out retries evenly over time, preventing synchronized thundering herd spikes on downstream services."
+    }
+  ]
+}

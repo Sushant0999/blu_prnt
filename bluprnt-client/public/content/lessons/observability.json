@@ -1,0 +1,46 @@
+{
+  "id": "observability",
+  "title": "Observability (Logs, Metrics, Traces)",
+  "intro": "Observability empowers software engineers to understand the internal state of complex distributed systems by analyzing external outputs: Metrics, Logs, and Distributed Traces.",
+  "objectives": [
+    "Implement distributed context propagation using W3C TraceContext standards.",
+    "Compare Prometheus pull-based time-series metrics with push-based collectors.",
+    "Structure JSON logging with correlated Trace IDs and Span IDs."
+  ],
+  "body": "### The Three Pillars of Observability\n1. **Metrics (Numeric Time-Series)**: Counters, Gauges, and Histograms (Prometheus, Datadog). Ultra-lightweight aggregation answering *\\'Is the system healthy?\\'* and *\\'What is the current P99 latency?\\'*.\n2. **Logs (Structured Events)**: JSON formatted log lines containing timestamp, level, message, and context. Answering *\\'What exactly happened during this discrete event?\\'*.\n3. **Distributed Tracing (Execution Path)**: Tracing a single user request as it traverses across multiple microservices. Every service forwards HTTP headers:\n   - `traceparent: 00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01`\n   Visualized as Gantt charts in Jaeger or Zipkin, pinpointing the exact microservice causing latency bottlenecks.",
+  "keyIdea": "Metrics alert you to problems; distributed traces isolate the bottleneck service; structured logs explain the root cause.",
+  "diagramType": "observability",
+  "concepts": [
+    {
+      "title": "Context Propagation",
+      "body": "Injecting and extracting TraceID and SpanID headers across HTTP, gRPC, and Kafka boundaries to link asynchronous spans together."
+    },
+    {
+      "title": "Sampling Strategies",
+      "body": "Recording 1% of successful traces (probabilistic sampling) but 100% of error traces (tail-based sampling) to conserve network and storage overhead."
+    }
+  ],
+  "examples": [
+    "OpenTelemetry SDK exporting spans to Jaeger and metrics to Prometheus."
+  ],
+  "resources": [
+    {
+      "title": "OpenTelemetry Documentation",
+      "url": "https://opentelemetry.io/"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "prompt": "What observability tool is specifically designed to isolate which microservice is responsible for a latency delay across a distributed call graph?",
+      "options": [
+        "Single-instance log file",
+        "Distributed Tracing (OpenTelemetry / Jaeger)",
+        "Operating system top command",
+        "Database EXPLAIN query"
+      ],
+      "correct": 1,
+      "explanation": "Distributed tracing connects spans across service boundaries into a unified timeline, immediately highlighting the slowest downstream dependency."
+    }
+  ]
+}

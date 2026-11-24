@@ -9,6 +9,10 @@ import {
   ShieldCheck,
   Sparkles,
   ArrowRight,
+  Globe,
+  Server,
+  Cpu,
+  Zap,
 } from 'lucide-react';
 import { ContentRepository } from '../repository/ContentRepository';
 import type { CatalogContent, CourseItem } from '../types/content';
@@ -40,6 +44,14 @@ export const CatalogPage: React.FC = () => {
         return Database;
       case 'ShieldCheck':
         return ShieldCheck;
+      case 'Globe':
+        return Globe;
+      case 'Server':
+        return Server;
+      case 'Cpu':
+        return Cpu;
+      case 'Zap':
+        return Zap;
       case 'Layers':
       default:
         return Layers;

@@ -1,0 +1,45 @@
+{
+  "id": "scaling-strategies",
+  "title": "Horizontal vs Vertical Scaling",
+  "intro": "Scaling expands system capacity to handle increasing transaction volumes by either upgrading physical machine specs or clustering multiple commodity nodes.",
+  "objectives": [
+    "Compare trade-offs between Vertical Scaling (Scale Up) and Horizontal Scaling (Scale Out).",
+    "Overcome stateful data bottlenecks using database read-replicas and sharding keys.",
+    "Configure autoscaling metrics and cooldown stabilization periods."
+  ],
+  "body": "### Vertical vs Horizontal Comparison\n- **Vertical Scaling (Scale-Up)**: Upgrading CPU cores, RAM, and NVMe SSDs. Simple (zero architectural changes), but hits physical hardware limits, exhibits single point of failure (SPOF), and suffers from diminishing cost-performance returns.\n- **Horizontal Scaling (Scale-Out)**: Adding commodity virtual machines or containers behind a load balancer. Near-infinite scalability and high fault tolerance, but demands distributed consistency, sharding, and network partition resilience.\n\n### The Shared-Nothing Principle\nState-of-the-art horizontal compute tiers adopt a **shared-nothing architecture**: each compute node operates independently with its own memory, delegating persistence to distributed databases (Postgres replicas, Cassandra, DynamoDB).",
+  "keyIdea": "Scale compute horizontally with stateless containers; scale storage with read-replicas, partitioning, and caching.",
+  "concepts": [
+    {
+      "title": "Read-Replicas vs Sharding",
+      "body": "Read-heavy workloads scale by adding asynchronous replicas. Write-heavy workloads require sharding data across multiple database primary nodes."
+    },
+    {
+      "title": "Autoscaling Throttling",
+      "body": "Cooldown windows prevent flapping (rapid churn of adding/removing nodes during spiky traffic bursts)."
+    }
+  ],
+  "examples": [
+    "Kubernetes Horizontal Pod Autoscaler (HPA) scaling pods based on CPU/memory target thresholds."
+  ],
+  "resources": [
+    {
+      "title": "Architecting for Scale (Lee Atchison)",
+      "url": "https://www.oreilly.com/library/view/architecting-for-scale/9781491943366/"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "prompt": "What is the primary constraint of scaling up vertically?",
+      "options": [
+        "Requires distributed transactions",
+        "Hits physical hardware boundaries and creates a SPOF",
+        "Increases network serialization latency",
+        "Incompatible with relational databases"
+      ],
+      "correct": 1,
+      "explanation": "Vertical scaling is bounded by the maximum specs of a single physical machine and represents a single point of failure."
+    }
+  ]
+}

@@ -1,0 +1,46 @@
+{
+  "id": "unique-id-generator",
+  "title": "Distributed Unique ID Generator",
+  "intro": "Generate globally unique 64-bit roughly time-ordered IDs at 100,000+ QPS without central database auto-increment bottlenecks.",
+  "objectives": [
+    "Deconstruct Twitter Snowflake 64-bit layout (timestamp, datacenter, worker, sequence).",
+    "Mitigate NTP backward clock drift in production servers.",
+    "Compare UUIDv4 vs Snowflake for relational database B-tree index locality."
+  ],
+  "body": "### The Twitter Snowflake Layout\nA 64-bit integer fitting standard SQL `BIGINT` primary keys:\n- **1 sign bit**: Always 0 (positive integer).\n- **41-bit Timestamp**: Milliseconds elapsed since a custom epoch (e.g. Nov 2024). $2^{41}$ ms $\\approx 69$ years of lifespan.\n- **5-bit Datacenter ID**: Supports up to 32 datacenters.\n- **5-bit Worker ID**: Supports up to 32 worker machines per datacenter (1,024 total nodes).\n- **12-bit Sequence Counter**: Increments for IDs generated within the exact same millisecond ($2^{12} = 4,096$ IDs/ms per worker $\\approx 4.09$ million IDs/sec per machine).",
+  "keyIdea": "Roughly time-ordered 64-bit IDs preserve database B-tree index insertion locality and eliminate locking across distributed nodes.",
+  "diagramType": "snowflake",
+  "concepts": [
+    {
+      "title": "B-Tree Locality vs UUIDv4",
+      "body": "Random 128-bit UUIDv4 scatters inserts across random B-tree pages, triggering massive disk I/O page thrashing. Snowflake IDs insert sequentially at the end of the B-tree leaf pages."
+    },
+    {
+      "title": "Clock Skew Mitigation",
+      "body": "If NTP jumps system time backward, the generator detects `current_time < last_timestamp` and pauses until the clock catches up, or throws a hardware clock alert."
+    }
+  ],
+  "examples": [
+    "Discord utilizing Snowflake IDs for all messages and channels."
+  ],
+  "resources": [
+    {
+      "title": "Twitter Snowflake Announcement",
+      "url": "https://blog.twitter.com/engineering/en_us/a/2010/announcing-snowflake"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "prompt": "Why does UUIDv4 degrade database insertion throughput compared to Snowflake IDs?",
+      "options": [
+        "UUIDs are stored as encrypted blobs",
+        "Randomness in UUIDv4 causes B-Tree page splits and random disk I/O thrashing",
+        "UUIDs cannot be indexed in SQL",
+        "UUID generation requires synchronous network RPCs"
+      ],
+      "correct": 1,
+      "explanation": "UUIDv4 random values force writes into arbitrary pages throughout the B-tree, causing frequent page splits and cache misses."
+    }
+  ]
+}

@@ -1,0 +1,46 @@
+{
+  "id": "ride-sharing",
+  "title": "Ride Sharing & Geospatial Dispatch (Uber)",
+  "intro": "Design a real-time ride hailing and dispatch system tracking millions of moving driver locations and matching riders with sub-second latency.",
+  "objectives": [
+    "Structure geospatial indexing using hierarchical spatial cells (Uber H3 / Google S2 / QuadTree).",
+    "Process high-frequency driver location heartbeats over persistent WebSocket/gRPC streams.",
+    "Execute optimal bipartite matching between riders and nearby drivers."
+  ],
+  "body": "### Geospatial Indexing: H3 Hexagonal Grid\nLatitude/Longitude pairs cannot be queried efficiently with B-tree range queries ($O(N)$ table scans). Modern ride-sharing platforms discretize the Earth\\'s surface into hierarchical spatial cells:\n- **Uber H3**: Hexagonal hierarchical spatial index. Hexagons have the unique mathematical property that all 6 adjacent neighbors are equidistant, making radius and travel-distance calculations uniform.\n- **Driver Location Updates**: Drivers emit location pings `(lat, lon, driver_id, status)` every 4 seconds. The dispatch engine maps `(lat, lon)` to an H3 cell index (e.g. resolution 8, ~460m across) and updates an in-memory spatial index (Redis Geospatial / memory table).\n- **Nearby Driver Query**: `h3.kRing(riderCell, 2)` retrieves all adjacent cells within 2 rings, finding candidates in $O(1)$ time.",
+  "keyIdea": "Discretize the globe into hexagonal cells (Uber H3). Route location pings into in-memory spatial indexes to evaluate nearby driver queries in O(1) time.",
+  "diagramType": "ridesharing",
+  "concepts": [
+    {
+      "title": "Bipartite Dispatch Matching",
+      "body": "Batching ride requests every 5 seconds to solve global optimization (Hungarian algorithm) rather than naive greedy first-come matching."
+    },
+    {
+      "title": "Trip State Machine",
+      "body": "Requested -> Matching -> DriverAssigned -> Arrived -> InTrip -> Completed."
+    }
+  ],
+  "examples": [
+    "Uber Geospatial dispatching architecture running on custom H3 hex grids."
+  ],
+  "resources": [
+    {
+      "title": "H3: Uber's Hexagonal Hierarchical Spatial Index",
+      "url": "https://www.uber.com/blog/h3/"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "prompt": "Why are hexagonal cells (H3) preferred over square grid cells for geospatial dispatch?",
+      "options": [
+        "Hexagons take less disk space",
+        "All adjacent neighbor cell centers are equidistant in a hexagon grid, eliminating diagonal distance distortion",
+        "Hexagons align with satellite orbits",
+        "Square grids cannot cover curved terrain"
+      ],
+      "correct": 1,
+      "explanation": "In a square grid, diagonal neighbors are $\\sqrt{2}$ times farther away. In a hexagonal grid, all 6 neighbors are strictly equidistant."
+    }
+  ]
+}

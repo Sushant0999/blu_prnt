@@ -1,0 +1,45 @@
+{
+  "id": "capacity-estimation",
+  "title": "Back-of-the-Envelope Capacity Estimation",
+  "intro": "Accurate back-of-the-envelope estimation grounds system design interviews in mathematical reality, sizing compute, storage, memory, and bandwidth.",
+  "objectives": [
+    "Derive Peak QPS from Daily Active Users (DAU) and read-to-write ratios.",
+    "Calculate disk storage growth over 5-year retention horizons with replication multipliers.",
+    "Apply the 80/20 Pareto principle to size Redis RAM working sets."
+  ],
+  "body": "### The Estimation Playbook\n\n#### 1. QPS Sizing\n23\text{Average QPS} = \frac{\text{DAU} \times \text{Requests per user}}{86,400 \text{ seconds/day}}23\n23\text{Peak QPS} = \text{Average QPS} \times 2 \text{ (or } 3\text{)}23\n\n#### 2. Storage Growth\n23\text{Daily Storage} = \text{Daily Writes} \times \text{Payload Size}23\n23\text{5-Year Storage} = \text{Daily Storage} \times 365 \times 5 \times \text{Replication Factor (3)}23\n\n#### 3. RAM Cache Sizing (80/20 Rule)\n20% of the daily read requests generate 80% of the traffic. Cache the top 20% in memory:\n23\text{Cache RAM} = \text{Daily Read Volume} \times 0.20 \times 1.25 \text{ (25% buffer)}23",
+  "keyIdea": "Use powers of two approximations (^{10}=1KB, 2^{20}=1MB, 2^{30}=1GB$). Never guess; derive all numbers systematically.",
+  "concepts": [
+    {
+      "title": "Key Latency Numbers",
+      "body": "L1 cache: 0.5ns, Main Memory (RAM): 100ns, SSD random read: 150us, Cross-datacenter RTT: 150ms."
+    },
+    {
+      "title": "Seconds in a Day",
+      "body": "86,400 seconds ~ 100,000 seconds for quick mental approximations."
+    }
+  ],
+  "examples": [
+    "Twitter: 300M DAU * 5 tweets/day = 1.5B writes/day = ~17,500 write QPS."
+  ],
+  "resources": [
+    {
+      "title": "Numbers Every Programmer Should Know",
+      "url": "https://gist.github.com/jboner/2841832"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "prompt": "If a system has 100M daily writes and each write is 1KB, approximately how much raw storage is required per day?",
+      "options": [
+        "10 GB",
+        "100 GB",
+        "1 TB",
+        "10 TB"
+      ],
+      "correct": 1,
+      "explanation": "100,000,000 * 1 KB = 100,000,000 KB = 100 GB/day."
+    }
+  ]
+}

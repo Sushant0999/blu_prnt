@@ -1,0 +1,46 @@
+{
+  "id": "client-server",
+  "title": "Client-Server Architecture & Multiplexing",
+  "intro": "The client-server model partitions workloads between resource providers (servers) and service requesters (clients), forming the bedrock of modern distributed applications.",
+  "objectives": [
+    "Differentiate stateful vs stateless client-server architectures.",
+    "Evaluate HTTP/1.1 pipelining vs HTTP/2 binary framing vs HTTP/3 QUIC UDP multiplexing.",
+    "Design robust connection pooling and keep-alive socket reuse mechanisms."
+  ],
+  "body": "In a client-server architecture, clients initiate requests and servers process and respond. Modern high-scale architectures enforce **stateless servers**, storing session state externally in Redis or JWT tokens. This allows any server instance behind a load balancer to handle any client request, enabling trivial horizontal scaling.\n\n### Transport Protocol Evolution\n- **HTTP/1.1**: Text-based, head-of-line (HOL) blocking at the application level; requires opening multiple TCP connections in parallel.\n- **HTTP/2**: Binary framing layer, multiplexes hundreds of concurrent requests over a single TCP stream. Still suffers from TCP-level HOL blocking on packet drop.\n- **HTTP/3 (QUIC)**: Runs over UDP with built-in encryption and independent multiplexed streams, eliminating packet-loss head-of-line blocking completely.",
+  "keyIdea": "Stateless servers make horizontal scaling trivial. Protocol multiplexing (HTTP/2 & HTTP/3) maximizes network throughput over single connection pipes.",
+  "concepts": [
+    {
+      "title": "Connection Pooling",
+      "body": "Establishing TCP/TLS handshakes costs 3-4 RTTs. Persistent connection pools maintain idle pre-warmed sockets to slash P99 latency."
+    },
+    {
+      "title": "Head-of-Line Blocking",
+      "body": "When an earlier packet delay holds up subsequent independent responses on the same TCP channel."
+    }
+  ],
+  "examples": [
+    "Envoy reverse proxy multiplexing HTTP/2 upstream to Spring Boot services.",
+    "Browser HTTP/3 connection migration when switching from Wi-Fi to cellular."
+  ],
+  "resources": [
+    {
+      "title": "RFC 9114 - HTTP/3 Specification",
+      "url": "https://datatracker.ietf.org/doc/html/rfc9114"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "prompt": "Why does HTTP/3 operate over UDP instead of TCP?",
+      "options": [
+        "UDP provides automatic packet encryption",
+        "To eliminate TCP-level head-of-line blocking on packet loss",
+        "UDP guarantees reliable packet delivery natively",
+        "To bypass firewall restrictions"
+      ],
+      "correct": 1,
+      "explanation": "QUIC/HTTP/3 runs over UDP so a lost packet in one stream does not pause other concurrent streams on the same connection."
+    }
+  ]
+}

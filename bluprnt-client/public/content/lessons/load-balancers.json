@@ -1,0 +1,48 @@
+{
+  "id": "load-balancers",
+  "title": "Load Balancers & Traffic Routing Algorithms",
+  "intro": "Load balancers distribute incoming network traffic across a cluster of backend servers to ensure no single server becomes an overwhelmed bottleneck.",
+  "objectives": [
+    "Differentiate Layer 4 (Transport/NLB) from Layer 7 (Application/ALB) load balancing.",
+    "Compare Round Robin, Weighted, Least Connections, and IP Hash algorithms.",
+    "Configure active health checks and seamless zero-downtime connection draining."
+  ],
+  "body": "### Layer 4 vs Layer 7 Load Balancing\n- **Layer 4 (Transport Layer - TCP/UDP)**: Routes packets based purely on IP and port without decrypting or inspecting payload content. Achieves ultra-low microsecond latency and millions of packets per second (e.g. AWS NLB, IPVS).\n- **Layer 7 (Application Layer - HTTP/HTTPS)**: Decrypts TLS and inspects HTTP headers, cookies, URL paths, and query parameters. Enables content-based routing, path-based dispatching (`/api/v1/orders` vs `/api/v1/auth`), and header-based rate limiting (e.g. Nginx, Envoy, AWS ALB).\n\n### Common Routing Algorithms\n1. **Round Robin**: Distributes requests sequentially across identical servers.\n2. **Weighted Round Robin**: Allocates proportional request shares based on server CPU/RAM capacity weights.\n3. **Least Connections**: Dispatches incoming requests to the server currently handling the fewest active connections. Optimal for long-lived WebSocket or database sessions.\n4. **Consistent Hashing**: Routes requests using client IP or session ID tokens to maintain cache locality.",
+  "keyIdea": "Use Layer 4 for lightning-fast raw packet forwarding at the edge; use Layer 7 for intelligent microservice routing, TLS termination, and auth offload.",
+  "sim": "load-balancer",
+  "diagramType": "loadbalancer",
+  "concepts": [
+    {
+      "title": "Active vs Passive Health Checks",
+      "body": "Active probes periodically query health endpoints (e.g. HTTP GET /healthz). Passive checks monitor live request status codes, ejecting nodes on consecutive 5xx errors."
+    },
+    {
+      "title": "Connection Draining (Deregistration Delay)",
+      "body": "Allows in-flight requests to complete gracefully while stopping new traffic to terminating or redeploying instances."
+    }
+  ],
+  "examples": [
+    "AWS ALB routing path-based requests to ECS container clusters.",
+    "Nginx reverse proxy load balancing upstream Node.js processes."
+  ],
+  "resources": [
+    {
+      "title": "Envoy Proxy Architecture Guide",
+      "url": "https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/arch_overview"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "prompt": "Which routing algorithm is most effective when request execution durations vary widely?",
+      "options": [
+        "Round Robin",
+        "Least Connections",
+        "Random Selection",
+        "Static Port Mapping"
+      ],
+      "correct": 1,
+      "explanation": "Least Connections prevents request accumulation on servers bogged down by long-running transactions."
+    }
+  ]
+}

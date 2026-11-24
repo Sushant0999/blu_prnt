@@ -1,0 +1,47 @@
+{
+  "id": "notification-service",
+  "title": "Notification Service at Scale",
+  "intro": "Design an enterprise notification dispatch platform distributing billions of notifications across Mobile Push (FCM/APNs), SMS, and Email.",
+  "objectives": [
+    "Architect prioritized queue tiers (Transactional/OTP > Marketing/Bulk).",
+    "Implement multi-vendor failover routing and deduplication.",
+    "Enforce user opt-out preferences and frequency-capping rate limiters."
+  ],
+  "body": "### Architecture Overview\n1. **API Ingress**: Validates sender authentication, inspects payload schema, and queries User Preferences DB (opt-out settings, quiet hours).\n2. **Prioritization Queues**: Critical notifications (2FA OTPs, fraud alerts) bypass marketing queues via dedicated high-priority workers.\n3. **Vendor Gateways**: Decoupled worker microservices interfacing with external third-party providers:\n   - iOS: Apple Push Notification service (APNs)\n   - Android: Firebase Cloud Messaging (FCM)\n   - SMS: Twilio, MessageBird (with automated multi-vendor fallback)\n   - Email: SendGrid, Amazon SES\n4. **Rate Limiting & De-duplication**: Redis sliding window limits user frequency (e.g. max 3 marketing emails/day).",
+  "keyIdea": "Third-party vendors fail frequently. Isolate providers behind asynchronous queues with automated secondary vendor failover.",
+  "sim": "messageQueue",
+  "diagramType": "notification",
+  "concepts": [
+    {
+      "title": "Idempotent Dispatch",
+      "body": "Hashing `(user_id, event_type, event_id)` in Redis ensures double-taps by users never trigger duplicate billing SMS messages."
+    },
+    {
+      "title": "Delivery Analytics Loop",
+      "body": "Webhook listener receiving delivery receipts, bounce rates, and click tracking from vendors."
+    }
+  ],
+  "examples": [
+    "Uber dispatching real-time driver arrival notifications."
+  ],
+  "resources": [
+    {
+      "title": "Designing a Notification System (System Design)",
+      "url": "https://bytebytego.com/"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "prompt": "How should a notification service protect users from being spammed by marketing campaigns?",
+      "options": [
+        "Disable email delivery completely",
+        "Enforce rate limiting and frequency capping based on user preference tables in Redis",
+        "Rely on third-party vendors to filter duplicates",
+        "Batch all notifications once a week"
+      ],
+      "correct": 1,
+      "explanation": "Frequency capping tables in Redis intercept and drop or delay lower-priority marketing messages exceeding user limits."
+    }
+  ]
+}

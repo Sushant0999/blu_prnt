@@ -1,0 +1,46 @@
+{
+  "id": "consistency-models",
+  "title": "Distributed Consistency Models",
+  "intro": "Consistency models specify the contract between a distributed storage system and its clients regarding the ordering and visibility of concurrent data mutations.",
+  "objectives": [
+    "Classify consistency spectrum from Linearizability to Eventual Consistency.",
+    "Implement Read-Your-Writes and Monotonic Reads in distributed architectures.",
+    "Differentiate Strong Eventual Consistency (CRDTs) from Last-Write-Wins (LWW)."
+  ],
+  "body": "### The Consistency Spectrum\n\n1. **Linearizability (Strong Consistency)**: Operations take effect instantaneously at a discrete point in time between their invocation and response. Looks like a single global register.\n2. **Sequential Consistency**: Operations appear in some global sequential order that is consistent with the program order on each individual node.\n3. **Causal Consistency**: Causally related operations must be seen by all nodes in the same order. Concurrent, un-related operations can be seen in different orders.\n4. **Read-Your-Writes**: A client that executes an update will always immediately observe that update on subsequent reads.\n5. **Eventual Consistency**: If no new updates are made, all replicas will eventually converge to the same value.",
+  "keyIdea": "Linearizability requires synchronous multi-node coordination. Weaker models (Causal, Read-Your-Writes) deliver massive throughput gains with acceptable domain trade-offs.",
+  "concepts": [
+    {
+      "title": "Vector Clocks",
+      "body": "Arrays of logical counters capturing causal relationships between distributed concurrent mutations."
+    },
+    {
+      "title": "Sticky Routing",
+      "body": "Routing a client's read queries to the same replica or master for 10 seconds after a write ensures Read-Your-Writes."
+    }
+  ],
+  "examples": [
+    "Git branching (causal consistency).",
+    "Amazon cart (dynamo eventual consistency with shopping cart merging)."
+  ],
+  "resources": [
+    {
+      "title": "Designing Data-Intensive Applications (Kleppmann)",
+      "url": "https://dataintensive.net/"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "prompt": "Which consistency guarantee ensures a user always sees their own comment immediately after posting it?",
+      "options": [
+        "Linearizability",
+        "Read-Your-Writes consistency",
+        "Monotonic Writes",
+        "Strict Serializability"
+      ],
+      "correct": 1,
+      "explanation": "Read-Your-Writes guarantees that a specific client always observes its own preceding writes."
+    }
+  ]
+}

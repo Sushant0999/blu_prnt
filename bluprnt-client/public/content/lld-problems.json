@@ -1778,5 +1778,2991 @@
       "Failing to support lock timeouts, permanently holding seats when checkout tabs are abandoned.",
       "No synchronization on seat lock acquisition resulting in double-booking."
     ]
+  },
+  {
+    "id": "rate-limiter",
+    "title": "Rate Limiter (Token Bucket)",
+    "difficulty": "medium",
+    "tags": [
+      "oop",
+      "strategy",
+      "concurrency",
+      "design-patterns"
+    ],
+    "summary": "Design a high-throughput, thread-safe in-memory rate limiter supporting interchangeable algorithms such as Token Bucket and Sliding Window Log.",
+    "requirements": [
+      "Support per-client or per-IP rate limiting with configurable capacity and refill rate.",
+      "Allow pluggable rate limiting algorithms (Token Bucket, Leaky Bucket, Sliding Window Log) without modifying client invocation logic.",
+      "Ensure thread safety under high concurrent requests without coarse-grained locking on the entire registry.",
+      "Return whether an incoming request is allowed or dropped (HTTP 429 semantics)."
+    ],
+    "constraints": [
+      "Evaluation latency must be sub-millisecond per request.",
+      "Client state must be stored in-memory efficiently with cleanup of stale client buckets."
+    ],
+    "hints": [
+      "Apply the Strategy Pattern to decouple the rate limiting evaluation algorithm from client tracking.",
+      "Use ConcurrentHashMap with computeIfAbsent or atomics to isolate locks per clientId rather than locking globally.",
+      "For Token Bucket, avoid running a background thread per client; compute elapsed time on demand upon each arrival."
+    ],
+    "keyEntities": [
+      "RateLimiter",
+      "RateLimiterStrategy",
+      "TokenBucketStrategy",
+      "SlidingWindowLogStrategy",
+      "ClientBucketRegistry"
+    ],
+    "selfReviewChecklist": [
+      "Is the algorithm encapsulated behind an interface allowing new strategies to be added cleanly?",
+      "Are token refills calculated lazily based on timestamp deltas rather than periodic active timers?",
+      "Is client tracking thread-safe under concurrent multi-threaded requests?"
+    ],
+    "referenceNotes": "### Architectural Solution & Concurrency Model\n\nA high-performance rate limiter computes token replenishment lazily upon request arrival rather than maintaining background threads per client:\n\n$$\\text{newTokens} = \\min(\\text{capacity}, \\text{currentTokens} + \\Delta t \\times \\text{refillRate})$$\n\n#### Thread Safety Strategy\nInstead of synchronizing the entire `RateLimiter` class, each client has an isolated `TokenBucket` object protected by atomic CAS or an internal lock, preventing lock contention across different clients.\n\n```java\npublic interface RateLimiterStrategy {\n    boolean allowRequest(String clientId);\n}\n\npublic class TokenBucketStrategy implements RateLimiterStrategy {\n    private final long capacity;\n    private final double refillTokensPerMs;\n    private final ConcurrentHashMap<String, Bucket> buckets = new ConcurrentHashMap<>();\n\n    public TokenBucketStrategy(long capacity, double refillTokensPerSecond) {\n        this.capacity = capacity;\n        this.refillTokensPerMs = refillTokensPerSecond / 1000.0;\n    }\n\n    private static class Bucket {\n        long tokens;\n        long lastRefillTime;\n        Bucket(long capacity, long now) {\n            this.tokens = capacity;\n            this.lastRefillTime = now;\n        }\n    }\n\n    @Override\n    public boolean allowRequest(String clientId) {\n        long now = System.currentTimeMillis();\n        Bucket bucket = buckets.computeIfAbsent(clientId, k -> new Bucket(capacity, now));\n        synchronized (bucket) {\n            long elapsed = now - bucket.lastRefillTime;\n            if (elapsed > 0) {\n                double added = elapsed * refillTokensPerMs;\n                bucket.tokens = Math.min(capacity, bucket.tokens + (long) added);\n                bucket.lastRefillTime = now;\n            }\n            if (bucket.tokens >= 1) {\n                bucket.tokens--;\n                return true;\n            }\n            return false;\n        }\n    }\n}\n```",
+    "relatedPatternIds": [
+      "strategy",
+      "decorator"
+    ],
+    "commonMistakes": [
+      "Spawning a background thread for every client bucket, leading to severe thread exhaustion.",
+      "Synchronizing the entire rate limiter registry on `allowRequest`, creating a global bottleneck."
+    ],
+    "referenceDiagram": {
+      "nodes": {
+        "n_limiter": {
+          "id": "n_limiter",
+          "position": {
+            "x": 50,
+            "y": 80
+          },
+          "data": {
+            "name": "RateLimiter",
+            "kind": "class",
+            "fields": [
+              {
+                "id": "f_1",
+                "visibility": "-",
+                "name": "strategy",
+                "type": "RateLimiterStrategy"
+              }
+            ],
+            "methods": [
+              {
+                "id": "m_1",
+                "visibility": "+",
+                "name": "isAllowed",
+                "type": "boolean",
+                "params": "clientId: String"
+              },
+              {
+                "id": "m_2",
+                "visibility": "+",
+                "name": "setStrategy",
+                "type": "void",
+                "params": "s: RateLimiterStrategy"
+              }
+            ],
+            "enumValues": []
+          }
+        },
+        "n_strat": {
+          "id": "n_strat",
+          "position": {
+            "x": 420,
+            "y": 80
+          },
+          "data": {
+            "name": "RateLimiterStrategy",
+            "kind": "interface",
+            "fields": [],
+            "methods": [
+              {
+                "id": "m_1",
+                "visibility": "+",
+                "name": "allowRequest",
+                "type": "boolean",
+                "params": "clientId: String"
+              }
+            ],
+            "enumValues": []
+          }
+        },
+        "n_tb": {
+          "id": "n_tb",
+          "position": {
+            "x": 300,
+            "y": 280
+          },
+          "data": {
+            "name": "TokenBucketStrategy",
+            "kind": "class",
+            "fields": [
+              {
+                "id": "f_1",
+                "visibility": "-",
+                "name": "capacity",
+                "type": "long"
+              },
+              {
+                "id": "f_2",
+                "visibility": "-",
+                "name": "refillRate",
+                "type": "double"
+              },
+              {
+                "id": "f_3",
+                "visibility": "-",
+                "name": "buckets",
+                "type": "Map<String, Bucket>"
+              }
+            ],
+            "methods": [
+              {
+                "id": "m_1",
+                "visibility": "+",
+                "name": "allowRequest",
+                "type": "boolean",
+                "params": "clientId: String"
+              }
+            ],
+            "enumValues": []
+          }
+        },
+        "n_sw": {
+          "id": "n_sw",
+          "position": {
+            "x": 580,
+            "y": 280
+          },
+          "data": {
+            "name": "SlidingWindowLogStrategy",
+            "kind": "class",
+            "fields": [
+              {
+                "id": "f_1",
+                "visibility": "-",
+                "name": "windowSizeMs",
+                "type": "long"
+              },
+              {
+                "id": "f_2",
+                "visibility": "-",
+                "name": "maxRequests",
+                "type": "int"
+              },
+              {
+                "id": "f_3",
+                "visibility": "-",
+                "name": "logs",
+                "type": "Map<String, Deque<Long>>"
+              }
+            ],
+            "methods": [
+              {
+                "id": "m_1",
+                "visibility": "+",
+                "name": "allowRequest",
+                "type": "boolean",
+                "params": "clientId: String"
+              }
+            ],
+            "enumValues": []
+          }
+        }
+      },
+      "edges": {
+        "e1": {
+          "id": "e1",
+          "source": "n_limiter",
+          "target": "n_strat",
+          "data": {
+            "kind": "association",
+            "label": "delegates to",
+            "sourceMultiplicity": "",
+            "targetMultiplicity": ""
+          }
+        },
+        "e2": {
+          "id": "e2",
+          "source": "n_tb",
+          "target": "n_strat",
+          "data": {
+            "kind": "implementation",
+            "label": "",
+            "sourceMultiplicity": "",
+            "targetMultiplicity": ""
+          }
+        },
+        "e3": {
+          "id": "e3",
+          "source": "n_sw",
+          "target": "n_strat",
+          "data": {
+            "kind": "implementation",
+            "label": "",
+            "sourceMultiplicity": "",
+            "targetMultiplicity": ""
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "logging-framework",
+    "title": "Logging Framework",
+    "difficulty": "medium",
+    "tags": [
+      "oop",
+      "observer",
+      "singleton",
+      "design-patterns"
+    ],
+    "summary": "Design an extensible logging library supporting multiple log levels, formatting layouts, and pluggable asynchronous destinations (Console, File, Network).",
+    "requirements": [
+      "Support standard hierarchical log levels: DEBUG < INFO < WARN < ERROR < FATAL.",
+      "Format log messages with timestamp, thread name, log level, and custom message layout.",
+      "Support multiple concurrent log appenders/sinks (ConsoleAppender, FileAppender, DatabaseAppender).",
+      "Provide a global Singleton or Factory accessor `LoggerFactory.getLogger(Class)`.",
+      "Support asynchronous logging without blocking application worker threads."
+    ],
+    "constraints": [
+      "Log writes must not fail the host application if an appender throws an I/O error.",
+      "Thread names and caller metadata must be captured accurately."
+    ],
+    "hints": [
+      "Use the Observer Pattern: the Logger acts as subject notifying registered Appender observers.",
+      "Use the Chain of Responsibility or simple level comparison to filter messages before formatting.",
+      "Use a bounded RingBuffer or BlockingQueue for AsyncAppender worker processing."
+    ],
+    "keyEntities": [
+      "Logger",
+      "LogLevel",
+      "LogMessage",
+      "LogAppender",
+      "ConsoleAppender",
+      "FileAppender",
+      "LogFormatter"
+    ],
+    "selfReviewChecklist": [
+      "Is formatting logic decoupled from the writing destination?",
+      "Can new appenders be plugged in without modifying existing logger classes?",
+      "Are log levels evaluated before expensive message string formatting?"
+    ],
+    "referenceNotes": "### Core Design & Concurrency Strategy\n\n```java\npublic enum LogLevel {\n    DEBUG(1), INFO(2), WARN(3), ERROR(4), FATAL(5);\n    private final int priority;\n    LogLevel(int priority) { this.priority = priority; }\n    public boolean isGreaterOrEqual(LogLevel other) { return this.priority >= other.priority; }\n}\n\npublic interface LogAppender {\n    void append(LogMessage message);\n}\n\npublic class ConsoleAppender implements LogAppender {\n    private final LogFormatter formatter;\n    public ConsoleAppender(LogFormatter formatter) { this.formatter = formatter; }\n    @Override\n    public synchronized void append(LogMessage message) {\n        System.out.println(formatter.format(message));\n    }\n}\n\npublic class Logger {\n    private final String name;\n    private LogLevel minimumLevel = LogLevel.INFO;\n    private final List<LogAppender> appenders = new CopyOnWriteArrayList<>();\n\n    public Logger(String name) { this.name = name; }\n    public void addAppender(LogAppender appender) { appenders.add(appender); }\n    public void setLevel(LogLevel level) { this.minimumLevel = level; }\n\n    public void log(LogLevel level, String msg) {\n        if (!level.isGreaterOrEqual(minimumLevel)) return;\n        LogMessage logMsg = new LogMessage(name, level, msg, System.currentTimeMillis(), Thread.currentThread().getName());\n        for (LogAppender appender : appenders) {\n            try {\n                appender.append(logMsg);\n            } catch (Exception e) {\n                System.err.println(\"Logging failure: \" + e.getMessage());\n            }\n        }\n    }\n    public void info(String msg) { log(LogLevel.INFO, msg); }\n    public void error(String msg) { log(LogLevel.ERROR, msg); }\n}\n```",
+    "relatedPatternIds": [
+      "observer",
+      "singleton",
+      "factory-method"
+    ],
+    "commonMistakes": [
+      "String formatting executed prior to log-level validation, wasting CPU cycles on discarded debug logs.",
+      "Synchronizing the entire logger method, serializing all application threads on logging."
+    ],
+    "referenceDiagram": {
+      "nodes": {
+        "n_logger": {
+          "id": "n_logger",
+          "position": {
+            "x": 50,
+            "y": 80
+          },
+          "data": {
+            "name": "Logger",
+            "kind": "class",
+            "fields": [
+              {
+                "id": "f_1",
+                "visibility": "-",
+                "name": "name",
+                "type": "String"
+              },
+              {
+                "id": "f_2",
+                "visibility": "-",
+                "name": "level",
+                "type": "LogLevel"
+              },
+              {
+                "id": "f_3",
+                "visibility": "-",
+                "name": "appenders",
+                "type": "List<LogAppender>"
+              }
+            ],
+            "methods": [
+              {
+                "id": "m_1",
+                "visibility": "+",
+                "name": "log",
+                "type": "void",
+                "params": "level: LogLevel, msg: String"
+              },
+              {
+                "id": "m_2",
+                "visibility": "+",
+                "name": "addAppender",
+                "type": "void",
+                "params": "a: LogAppender"
+              }
+            ],
+            "enumValues": []
+          }
+        },
+        "n_appender": {
+          "id": "n_appender",
+          "position": {
+            "x": 420,
+            "y": 80
+          },
+          "data": {
+            "name": "LogAppender",
+            "kind": "interface",
+            "fields": [],
+            "methods": [
+              {
+                "id": "m_1",
+                "visibility": "+",
+                "name": "append",
+                "type": "void",
+                "params": "msg: LogMessage"
+              }
+            ],
+            "enumValues": []
+          }
+        },
+        "n_console": {
+          "id": "n_console",
+          "position": {
+            "x": 300,
+            "y": 280
+          },
+          "data": {
+            "name": "ConsoleAppender",
+            "kind": "class",
+            "fields": [
+              {
+                "id": "f_1",
+                "visibility": "-",
+                "name": "formatter",
+                "type": "LogFormatter"
+              }
+            ],
+            "methods": [
+              {
+                "id": "m_1",
+                "visibility": "+",
+                "name": "append",
+                "type": "void",
+                "params": "msg: LogMessage"
+              }
+            ],
+            "enumValues": []
+          }
+        },
+        "n_file": {
+          "id": "n_file",
+          "position": {
+            "x": 580,
+            "y": 280
+          },
+          "data": {
+            "name": "FileAppender",
+            "kind": "class",
+            "fields": [
+              {
+                "id": "f_1",
+                "visibility": "-",
+                "name": "filePath",
+                "type": "String"
+              },
+              {
+                "id": "f_2",
+                "visibility": "-",
+                "name": "formatter",
+                "type": "LogFormatter"
+              }
+            ],
+            "methods": [
+              {
+                "id": "m_1",
+                "visibility": "+",
+                "name": "append",
+                "type": "void",
+                "params": "msg: LogMessage"
+              }
+            ],
+            "enumValues": []
+          }
+        },
+        "n_formatter": {
+          "id": "n_formatter",
+          "position": {
+            "x": 720,
+            "y": 80
+          },
+          "data": {
+            "name": "LogFormatter",
+            "kind": "interface",
+            "fields": [],
+            "methods": [
+              {
+                "id": "m_1",
+                "visibility": "+",
+                "name": "format",
+                "type": "String",
+                "params": "msg: LogMessage"
+              }
+            ],
+            "enumValues": []
+          }
+        }
+      },
+      "edges": {
+        "e1": {
+          "id": "e1",
+          "source": "n_logger",
+          "target": "n_appender",
+          "data": {
+            "kind": "association",
+            "label": "notifies (0..*)",
+            "sourceMultiplicity": "",
+            "targetMultiplicity": ""
+          }
+        },
+        "e2": {
+          "id": "e2",
+          "source": "n_console",
+          "target": "n_appender",
+          "data": {
+            "kind": "implementation",
+            "label": "",
+            "sourceMultiplicity": "",
+            "targetMultiplicity": ""
+          }
+        },
+        "e3": {
+          "id": "e3",
+          "source": "n_file",
+          "target": "n_appender",
+          "data": {
+            "kind": "implementation",
+            "label": "",
+            "sourceMultiplicity": "",
+            "targetMultiplicity": ""
+          }
+        },
+        "e4": {
+          "id": "e4",
+          "source": "n_console",
+          "target": "n_formatter",
+          "data": {
+            "kind": "association",
+            "label": "uses",
+            "sourceMultiplicity": "",
+            "targetMultiplicity": ""
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "library-management",
+    "title": "Library Management System",
+    "difficulty": "easy",
+    "tags": [
+      "oop",
+      "strategy",
+      "factory-method"
+    ],
+    "summary": "Design a comprehensive library catalog system managing physical book items, multi-factor searches, member checkouts, reservations, and overdue fine calculations.",
+    "requirements": [
+      "Distinguish between a conceptual Book (metadata, ISBN, authors) and physical BookItem (barcode, rack number, status).",
+      "Support searching the catalog by Title, Author, Subject, or Publication Date.",
+      "Support checkout limits (e.g. max 5 books for standard member) and 14-day borrowing duration.",
+      "Calculate overdue fines with interchangeable fine calculation policies.",
+      "Allow members to reserve books currently checked out by others."
+    ],
+    "constraints": [
+      "A book item cannot be issued to multiple members simultaneously.",
+      "Lost or damaged book items must update inventory state and assess replacement fees."
+    ],
+    "hints": [
+      "Separate Book (definition) from BookItem (instance). A library has 1 Book record for 'Clean Architecture', but 5 physical BookItems with distinct barcodes.",
+      "Use the Strategy Pattern for SearchStrategy and FineCalculationStrategy.",
+      "Use an Enum for BookStatus (AVAILABLE, RESERVED, LOANED, LOST)."
+    ],
+    "keyEntities": [
+      "Library",
+      "Book",
+      "BookItem",
+      "Member",
+      "Librarian",
+      "BookLending",
+      "FineStrategy"
+    ],
+    "selfReviewChecklist": [
+      "Did you decouple Book conceptual entity from physical BookItem barcode copies?",
+      "Is the lending period and overdue fine calculation customizable without altering member logic?",
+      "Are search filters extensible via query strategies?"
+    ],
+    "referenceNotes": "### Core Class Structure & Entity Relationships\n\n```java\npublic enum BookStatus { AVAILABLE, RESERVED, LOANED, LOST }\n\npublic class Book {\n    private final String isbn;\n    private final String title;\n    private final String author;\n    public Book(String isbn, String title, String author) {\n        this.isbn = isbn; this.title = title; this.author = author;\n    }\n    // getters\n}\n\npublic class BookItem {\n    private final String barcode;\n    private final Book book;\n    private BookStatus status = BookStatus.AVAILABLE;\n    private String rackLocation;\n\n    public BookItem(String barcode, Book book, String rackLocation) {\n        this.barcode = barcode; this.book = book; this.rackLocation = rackLocation;\n    }\n    public synchronized boolean checkout() {\n        if (status == BookStatus.AVAILABLE) {\n            status = BookStatus.LOANED;\n            return true;\n        }\n        return false;\n    }\n    public synchronized void returnItem() {\n        status = BookStatus.AVAILABLE;\n    }\n}\n\npublic interface FineStrategy {\n    double calculateFine(long overdueDays);\n}\n\npublic class StandardFineStrategy implements FineStrategy {\n    private static final double DAILY_RATE = 1.50;\n    @Override\n    public double calculateFine(long overdueDays) {\n        return Math.max(0, overdueDays * DAILY_RATE);\n    }\n}\n```",
+    "relatedPatternIds": [
+      "strategy",
+      "factory-method"
+    ],
+    "commonMistakes": [
+      "Merging Book and BookItem into one class, making it impossible to track multiple physical copies of the same book.",
+      "Hardcoding fixed lending duration and fine rates inside checkout methods."
+    ],
+    "referenceDiagram": {
+      "nodes": {
+        "n_lib": {
+          "id": "n_lib",
+          "position": {
+            "x": 50,
+            "y": 80
+          },
+          "data": {
+            "name": "Library",
+            "kind": "class",
+            "fields": [
+              {
+                "id": "f_1",
+                "visibility": "-",
+                "name": "catalog",
+                "type": "Map<String, Book>"
+              },
+              {
+                "id": "f_2",
+                "visibility": "-",
+                "name": "members",
+                "type": "Map<String, Member>"
+              }
+            ],
+            "methods": [
+              {
+                "id": "m_1",
+                "visibility": "+",
+                "name": "search",
+                "type": "List<Book>",
+                "params": "query: String"
+              },
+              {
+                "id": "m_2",
+                "visibility": "+",
+                "name": "checkoutBook",
+                "type": "BookLending",
+                "params": "item: BookItem, m: Member"
+              }
+            ],
+            "enumValues": []
+          }
+        },
+        "n_book": {
+          "id": "n_book",
+          "position": {
+            "x": 380,
+            "y": 80
+          },
+          "data": {
+            "name": "Book",
+            "kind": "class",
+            "fields": [
+              {
+                "id": "f_1",
+                "visibility": "-",
+                "name": "isbn",
+                "type": "String"
+              },
+              {
+                "id": "f_2",
+                "visibility": "-",
+                "name": "title",
+                "type": "String"
+              },
+              {
+                "id": "f_3",
+                "visibility": "-",
+                "name": "author",
+                "type": "String"
+              }
+            ],
+            "methods": [
+              {
+                "id": "m_1",
+                "visibility": "+",
+                "name": "getTitle",
+                "type": "String",
+                "params": ""
+              }
+            ],
+            "enumValues": []
+          }
+        },
+        "n_item": {
+          "id": "n_item",
+          "position": {
+            "x": 700,
+            "y": 80
+          },
+          "data": {
+            "name": "BookItem",
+            "kind": "class",
+            "fields": [
+              {
+                "id": "f_1",
+                "visibility": "-",
+                "name": "barcode",
+                "type": "String"
+              },
+              {
+                "id": "f_2",
+                "visibility": "-",
+                "name": "status",
+                "type": "BookStatus"
+              },
+              {
+                "id": "f_3",
+                "visibility": "-",
+                "name": "rackLocation",
+                "type": "String"
+              }
+            ],
+            "methods": [
+              {
+                "id": "m_1",
+                "visibility": "+",
+                "name": "checkout",
+                "type": "boolean",
+                "params": ""
+              },
+              {
+                "id": "m_2",
+                "visibility": "+",
+                "name": "returnItem",
+                "type": "void",
+                "params": ""
+              }
+            ],
+            "enumValues": []
+          }
+        },
+        "n_fine": {
+          "id": "n_fine",
+          "position": {
+            "x": 380,
+            "y": 280
+          },
+          "data": {
+            "name": "FineStrategy",
+            "kind": "interface",
+            "fields": [],
+            "methods": [
+              {
+                "id": "m_1",
+                "visibility": "+",
+                "name": "calculateFine",
+                "type": "double",
+                "params": "overdueDays: long"
+              }
+            ],
+            "enumValues": []
+          }
+        },
+        "n_stdfine": {
+          "id": "n_stdfine",
+          "position": {
+            "x": 700,
+            "y": 280
+          },
+          "data": {
+            "name": "StandardFineStrategy",
+            "kind": "class",
+            "fields": [
+              {
+                "id": "f_1",
+                "visibility": "-",
+                "name": "dailyRate",
+                "type": "double"
+              }
+            ],
+            "methods": [
+              {
+                "id": "m_1",
+                "visibility": "+",
+                "name": "calculateFine",
+                "type": "double",
+                "params": "overdueDays: long"
+              }
+            ],
+            "enumValues": []
+          }
+        }
+      },
+      "edges": {
+        "e1": {
+          "id": "e1",
+          "source": "n_lib",
+          "target": "n_book",
+          "data": {
+            "kind": "aggregation",
+            "label": "catalogs (0..*)",
+            "sourceMultiplicity": "",
+            "targetMultiplicity": ""
+          }
+        },
+        "e2": {
+          "id": "e2",
+          "source": "n_item",
+          "target": "n_book",
+          "data": {
+            "kind": "association",
+            "label": "instance of",
+            "sourceMultiplicity": "",
+            "targetMultiplicity": ""
+          }
+        },
+        "e3": {
+          "id": "e3",
+          "source": "n_stdfine",
+          "target": "n_fine",
+          "data": {
+            "kind": "implementation",
+            "label": "",
+            "sourceMultiplicity": "",
+            "targetMultiplicity": ""
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "atm-system",
+    "title": "ATM System",
+    "difficulty": "hard",
+    "tags": [
+      "oop",
+      "state",
+      "singleton",
+      "concurrency"
+    ],
+    "summary": "Design an Automated Teller Machine (ATM) software architecture modeling card authentication, state transitions, cash dispensing, and bank service communication.",
+    "requirements": [
+      "Model ATM user flow via state transitions: IdleState -> CardInsertedState -> PinAuthenticatedState -> TransactionExecutionState.",
+      "Support core operations: Balance Inquiry, Cash Withdrawal, Deposit, and Card Eject.",
+      "Dispense requested withdrawal amounts using optimal currency denominations ($100, $50, $20) using Chain of Responsibility.",
+      "Handle error conditions: incorrect PIN (3 attempts ejects card), insufficient ATM cash, and bank communication failure."
+    ],
+    "constraints": [
+      "Transactions must be atomic: if hardware cash dispensing jams, bank debit must roll back.",
+      "Only one active user session can proceed at a time."
+    ],
+    "hints": [
+      "Use the State Pattern for ATM lifecycle state transitions.",
+      "Use Chain of Responsibility for the CashDispenser denominations ($100 dispenser -> $50 dispenser -> $20 dispenser).",
+      "Keep the BankService behind an interface to allow mocking banking network transactions."
+    ],
+    "keyEntities": [
+      "ATM",
+      "ATMState",
+      "IdleState",
+      "HasCardState",
+      "PinValidatedState",
+      "CashDispenser",
+      "BankService"
+    ],
+    "selfReviewChecklist": [
+      "Does the ATM delegate state-dependent actions to an explicit ATMState object?",
+      "Is cash dispensing isolated from bank account debiting with rollback safety?",
+      "Are card ejection and timeout mechanics modeled across all states?"
+    ],
+    "referenceNotes": "### State Machine & Dispenser Chain\n\n```java\npublic interface ATMState {\n    void insertCard(ATM atm, Card card);\n    void enterPin(ATM atm, int pin);\n    void withdrawCash(ATM atm, double amount);\n    void ejectCard(ATM atm);\n}\n\npublic class IdleState implements ATMState {\n    @Override\n    public void insertCard(ATM atm, Card card) {\n        atm.setCurrentCard(card);\n        atm.changeState(new HasCardState());\n    }\n    @Override public void enterPin(ATM atm, int pin) { throw new IllegalStateException(\"Insert card first\"); }\n    @Override public void withdrawCash(ATM atm, double amount) { throw new IllegalStateException(\"Insert card first\"); }\n    @Override public void ejectCard(ATM atm) { System.out.println(\"No card inserted\"); }\n}\n\npublic abstract class DispenseChain {\n    protected DispenseChain next;\n    public void setNext(DispenseChain next) { this.next = next; }\n    public abstract void dispense(Currency currency);\n}\n```",
+    "relatedPatternIds": [
+      "state",
+      "singleton",
+      "command"
+    ],
+    "commonMistakes": [
+      "Using nested switch-case statements inside ATM class instead of the State Pattern.",
+      "Debiting the customer account before physically validating and verifying cash dispenser inventory."
+    ],
+    "referenceDiagram": {
+      "nodes": {
+        "n_atm": {
+          "id": "n_atm",
+          "position": {
+            "x": 50,
+            "y": 80
+          },
+          "data": {
+            "name": "ATM",
+            "kind": "class",
+            "fields": [
+              {
+                "id": "f_1",
+                "visibility": "-",
+                "name": "currentState",
+                "type": "ATMState"
+              },
+              {
+                "id": "f_2",
+                "visibility": "-",
+                "name": "cashBalance",
+                "type": "double"
+              },
+              {
+                "id": "f_3",
+                "visibility": "-",
+                "name": "bankService",
+                "type": "BankService"
+              }
+            ],
+            "methods": [
+              {
+                "id": "m_1",
+                "visibility": "+",
+                "name": "insertCard",
+                "type": "void",
+                "params": "card: Card"
+              },
+              {
+                "id": "m_2",
+                "visibility": "+",
+                "name": "enterPin",
+                "type": "void",
+                "params": "pin: int"
+              },
+              {
+                "id": "m_3",
+                "visibility": "+",
+                "name": "withdraw",
+                "type": "void",
+                "params": "amount: double"
+              }
+            ],
+            "enumValues": []
+          }
+        },
+        "n_state": {
+          "id": "n_state",
+          "position": {
+            "x": 420,
+            "y": 80
+          },
+          "data": {
+            "name": "ATMState",
+            "kind": "interface",
+            "fields": [],
+            "methods": [
+              {
+                "id": "m_1",
+                "visibility": "+",
+                "name": "insertCard",
+                "type": "void",
+                "params": "atm: ATM, c: Card"
+              },
+              {
+                "id": "m_2",
+                "visibility": "+",
+                "name": "enterPin",
+                "type": "void",
+                "params": "atm: ATM, pin: int"
+              },
+              {
+                "id": "m_3",
+                "visibility": "+",
+                "name": "ejectCard",
+                "type": "void",
+                "params": "atm: ATM"
+              }
+            ],
+            "enumValues": []
+          }
+        },
+        "n_idle": {
+          "id": "n_idle",
+          "position": {
+            "x": 250,
+            "y": 280
+          },
+          "data": {
+            "name": "IdleState",
+            "kind": "class",
+            "fields": [],
+            "methods": [
+              {
+                "id": "m_1",
+                "visibility": "+",
+                "name": "insertCard",
+                "type": "void",
+                "params": "atm: ATM, c: Card"
+              },
+              {
+                "id": "m_2",
+                "visibility": "+",
+                "name": "ejectCard",
+                "type": "void",
+                "params": "atm: ATM"
+              }
+            ],
+            "enumValues": []
+          }
+        },
+        "n_hascard": {
+          "id": "n_hascard",
+          "position": {
+            "x": 500,
+            "y": 280
+          },
+          "data": {
+            "name": "HasCardState",
+            "kind": "class",
+            "fields": [],
+            "methods": [
+              {
+                "id": "m_1",
+                "visibility": "+",
+                "name": "enterPin",
+                "type": "void",
+                "params": "atm: ATM, pin: int"
+              },
+              {
+                "id": "m_2",
+                "visibility": "+",
+                "name": "ejectCard",
+                "type": "void",
+                "params": "atm: ATM"
+              }
+            ],
+            "enumValues": []
+          }
+        },
+        "n_dispenser": {
+          "id": "n_dispenser",
+          "position": {
+            "x": 760,
+            "y": 80
+          },
+          "data": {
+            "name": "CashDispenser",
+            "kind": "class",
+            "fields": [
+              {
+                "id": "f_1",
+                "visibility": "-",
+                "name": "currency100",
+                "type": "int"
+              },
+              {
+                "id": "f_2",
+                "visibility": "-",
+                "name": "currency50",
+                "type": "int"
+              },
+              {
+                "id": "f_3",
+                "visibility": "-",
+                "name": "currency20",
+                "type": "int"
+              }
+            ],
+            "methods": [
+              {
+                "id": "m_1",
+                "visibility": "+",
+                "name": "dispense",
+                "type": "boolean",
+                "params": "amount: double"
+              }
+            ],
+            "enumValues": []
+          }
+        }
+      },
+      "edges": {
+        "e1": {
+          "id": "e1",
+          "source": "n_atm",
+          "target": "n_state",
+          "data": {
+            "kind": "association",
+            "label": "current state",
+            "sourceMultiplicity": "",
+            "targetMultiplicity": ""
+          }
+        },
+        "e2": {
+          "id": "e2",
+          "source": "n_idle",
+          "target": "n_state",
+          "data": {
+            "kind": "implementation",
+            "label": "",
+            "sourceMultiplicity": "",
+            "targetMultiplicity": ""
+          }
+        },
+        "e3": {
+          "id": "e3",
+          "source": "n_hascard",
+          "target": "n_state",
+          "data": {
+            "kind": "implementation",
+            "label": "",
+            "sourceMultiplicity": "",
+            "targetMultiplicity": ""
+          }
+        },
+        "e4": {
+          "id": "e4",
+          "source": "n_atm",
+          "target": "n_dispenser",
+          "data": {
+            "kind": "composition",
+            "label": "contains",
+            "sourceMultiplicity": "",
+            "targetMultiplicity": ""
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "food-delivery-state",
+    "title": "Food Delivery Order Flow (State Machine)",
+    "difficulty": "medium",
+    "tags": [
+      "oop",
+      "state",
+      "observer",
+      "state-machine"
+    ],
+    "summary": "Design the life-cycle of a food delivery order through successive states with automatic customer, restaurant, and driver event notifications.",
+    "requirements": [
+      "Model order life cycle: CREATED -> PAID -> ACCEPTED_BY_RESTAURANT -> PREPARING -> READY_FOR_PICKUP -> OUT_FOR_DELIVERY -> DELIVERED (or CANCELLED).",
+      "Enforce strict legal state transitions (e.g. order cannot transition from DELIVERED to PREPARING; cannot cancel once OUT_FOR_DELIVERY).",
+      "Notify stakeholders (Customer, Restaurant, DeliveryPartner) upon state transitions via Observer Pattern.",
+      "Record timestamp and location history along each transition stage."
+    ],
+    "constraints": [
+      "Cancellations must execute compensation actions (e.g. refund payment if paid, release driver reservation)."
+    ],
+    "hints": [
+      "Combine the State Pattern for transition validation with the Observer Pattern for event dispatching.",
+      "Pass an OrderContext into state transition methods to allow state changes to update the context safely.",
+      "Maintain an immutable transition audit log tracking each state change with actor identity and timestamp."
+    ],
+    "keyEntities": [
+      "Order",
+      "OrderState",
+      "OrderPlacedState",
+      "PreparingState",
+      "DeliveredState",
+      "OrderObserver"
+    ],
+    "selfReviewChecklist": [
+      "Are invalid transitions cleanly rejected with domain exceptions?",
+      "Is the observer event system decoupled from state validation logic?",
+      "Can new notifications channels be added without modifying order states?"
+    ],
+    "referenceNotes": "### State Machine with Event Broadcasting\n\n```java\npublic interface OrderState {\n    void handlePayment(OrderContext ctx);\n    void acceptByRestaurant(OrderContext ctx);\n    void startDelivery(OrderContext ctx);\n    void markDelivered(OrderContext ctx);\n    void cancel(OrderContext ctx);\n}\n\npublic class OrderContext {\n    private OrderState currentState;\n    private final String orderId;\n    private final List<OrderObserver> observers = new ArrayList<>();\n\n    public OrderContext(String orderId) {\n        this.orderId = orderId;\n        this.currentState = new OrderCreatedState();\n    }\n    public void setState(OrderState next) {\n        this.currentState = next;\n        notifyObservers();\n    }\n    private void notifyObservers() {\n        for (OrderObserver o : observers) o.onOrderUpdated(this);\n    }\n}\n```",
+    "relatedPatternIds": [
+      "state",
+      "observer"
+    ],
+    "commonMistakes": [
+      "Allowing direct state assignment (`order.setStatus(...)`) bypassing business validation invariants.",
+      "Coupling SMS/Push notification logic directly inside each State class."
+    ],
+    "referenceDiagram": {
+      "nodes": {
+        "n_order": {
+          "id": "n_order",
+          "position": {
+            "x": 50,
+            "y": 80
+          },
+          "data": {
+            "name": "OrderContext",
+            "kind": "class",
+            "fields": [
+              {
+                "id": "f_1",
+                "visibility": "-",
+                "name": "orderId",
+                "type": "String"
+              },
+              {
+                "id": "f_2",
+                "visibility": "-",
+                "name": "state",
+                "type": "OrderState"
+              },
+              {
+                "id": "f_3",
+                "visibility": "-",
+                "name": "observers",
+                "type": "List<OrderObserver>"
+              }
+            ],
+            "methods": [
+              {
+                "id": "m_1",
+                "visibility": "+",
+                "name": "setState",
+                "type": "void",
+                "params": "s: OrderState"
+              },
+              {
+                "id": "m_2",
+                "visibility": "+",
+                "name": "cancel",
+                "type": "void",
+                "params": ""
+              }
+            ],
+            "enumValues": []
+          }
+        },
+        "n_state": {
+          "id": "n_state",
+          "position": {
+            "x": 420,
+            "y": 80
+          },
+          "data": {
+            "name": "OrderState",
+            "kind": "interface",
+            "fields": [],
+            "methods": [
+              {
+                "id": "m_1",
+                "visibility": "+",
+                "name": "next",
+                "type": "void",
+                "params": "ctx: OrderContext"
+              },
+              {
+                "id": "m_2",
+                "visibility": "+",
+                "name": "cancel",
+                "type": "void",
+                "params": "ctx: OrderContext"
+              }
+            ],
+            "enumValues": []
+          }
+        },
+        "n_prep": {
+          "id": "n_prep",
+          "position": {
+            "x": 250,
+            "y": 280
+          },
+          "data": {
+            "name": "PreparingState",
+            "kind": "class",
+            "fields": [],
+            "methods": [
+              {
+                "id": "m_1",
+                "visibility": "+",
+                "name": "next",
+                "type": "void",
+                "params": "ctx: OrderContext"
+              },
+              {
+                "id": "m_2",
+                "visibility": "+",
+                "name": "cancel",
+                "type": "void",
+                "params": "ctx: OrderContext"
+              }
+            ],
+            "enumValues": []
+          }
+        },
+        "n_out": {
+          "id": "n_out",
+          "position": {
+            "x": 500,
+            "y": 280
+          },
+          "data": {
+            "name": "OutForDeliveryState",
+            "kind": "class",
+            "fields": [],
+            "methods": [
+              {
+                "id": "m_1",
+                "visibility": "+",
+                "name": "next",
+                "type": "void",
+                "params": "ctx: OrderContext"
+              },
+              {
+                "id": "m_2",
+                "visibility": "+",
+                "name": "cancel",
+                "type": "void",
+                "params": "ctx: OrderContext"
+              }
+            ],
+            "enumValues": []
+          }
+        },
+        "n_obs": {
+          "id": "n_obs",
+          "position": {
+            "x": 720,
+            "y": 80
+          },
+          "data": {
+            "name": "OrderObserver",
+            "kind": "interface",
+            "fields": [],
+            "methods": [
+              {
+                "id": "m_1",
+                "visibility": "+",
+                "name": "onOrderUpdate",
+                "type": "void",
+                "params": "ctx: OrderContext"
+              }
+            ],
+            "enumValues": []
+          }
+        }
+      },
+      "edges": {
+        "e1": {
+          "id": "e1",
+          "source": "n_order",
+          "target": "n_state",
+          "data": {
+            "kind": "association",
+            "label": "current state",
+            "sourceMultiplicity": "",
+            "targetMultiplicity": ""
+          }
+        },
+        "e2": {
+          "id": "e2",
+          "source": "n_prep",
+          "target": "n_state",
+          "data": {
+            "kind": "implementation",
+            "label": "",
+            "sourceMultiplicity": "",
+            "targetMultiplicity": ""
+          }
+        },
+        "e3": {
+          "id": "e3",
+          "source": "n_out",
+          "target": "n_state",
+          "data": {
+            "kind": "implementation",
+            "label": "",
+            "sourceMultiplicity": "",
+            "targetMultiplicity": ""
+          }
+        },
+        "e4": {
+          "id": "e4",
+          "source": "n_order",
+          "target": "n_obs",
+          "data": {
+            "kind": "association",
+            "label": "notifies (0..*)",
+            "sourceMultiplicity": "",
+            "targetMultiplicity": ""
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "tic-tac-toe",
+    "title": "Tic-Tac-Toe Game",
+    "difficulty": "easy",
+    "tags": [
+      "oop",
+      "strategy",
+      "game-design"
+    ],
+    "summary": "Design an extensible N x N Tic-Tac-Toe game supporting multiple players, custom symbols, undo moves, and pluggable win-checking algorithms.",
+    "requirements": [
+      "Support generalized $N \\times N$ board size (default 3x3).",
+      "Support $M$ players taking alternating turns placing their assigned piece symbol (X, O, Triangle, etc.).",
+      "Validate moves: coordinates must be within board bounds and target cell must be unoccupied.",
+      "Detect winning condition in $O(1)$ time complexity per move rather than rescanning the full board.",
+      "Detect draw condition when board is full and no winner has emerged."
+    ],
+    "constraints": [
+      "Move evaluation must scale to large boards ($N = 1000$) efficiently."
+    ],
+    "hints": [
+      "Track row counts, column counts, and diagonal counts in integer arrays to achieve $O(1)$ win checking per move.",
+      "Use a `Deque<Move>` to support undoing moves if required.",
+      "Separate game orchestration (turn rotation, move history) from individual board validation logic."
+    ],
+    "keyEntities": [
+      "TicTacToeGame",
+      "Board",
+      "Player",
+      "Piece",
+      "Move",
+      "WinDetectionStrategy"
+    ],
+    "selfReviewChecklist": [
+      "Does the board support arbitrary grid size $N$ without rewriting core loop logic?",
+      "Is win checking implemented in $O(1)$ time rather than traversing the full $N \\times N$ grid on every turn?",
+      "Are Piece and Player cleanly decoupled?"
+    ],
+    "referenceNotes": "### O(1) Fast Win Detection Algorithm\n\nMaintain counts per row, column, and two diagonals for each player:\n\n```java\npublic class Board {\n    private final int size;\n    private final Piece[][] grid;\n    private final int[] rowCounts;\n    private final int[] colCounts;\n    private int diagCount = 0;\n    private int antiDiagCount = 0;\n\n    public Board(int size) {\n        this.size = size;\n        this.grid = new Piece[size][size];\n        this.rowCounts = new int[size];\n        this.colCounts = new int[size];\n    }\n\n    public boolean placePiece(int row, int col, Piece piece, int playerVal) {\n        if (grid[row][col] != null) return false;\n        grid[row][col] = piece;\n\n        rowCounts[row] += playerVal;\n        colCounts[col] += playerVal;\n        if (row == col) diagCount += playerVal;\n        if (row + col == size - 1) antiDiagCount += playerVal;\n\n        int target = size * playerVal;\n        return rowCounts[row] == target || colCounts[col] == target || diagCount == target || antiDiagCount == target;\n    }\n}\n```",
+    "relatedPatternIds": [
+      "strategy",
+      "factory-method"
+    ],
+    "commonMistakes": [
+      "Traversing the entire $N \\times N$ board on every move, resulting in $O(N^2)$ checks instead of $O(1)$ counters.",
+      "Hardcoding fixed 'X' and 'O' strings instead of a polymorphic or enum Piece model."
+    ],
+    "referenceDiagram": {
+      "nodes": {
+        "n_game": {
+          "id": "n_game",
+          "position": {
+            "x": 50,
+            "y": 80
+          },
+          "data": {
+            "name": "TicTacToeGame",
+            "kind": "class",
+            "fields": [
+              {
+                "id": "f_1",
+                "visibility": "-",
+                "name": "board",
+                "type": "Board"
+              },
+              {
+                "id": "f_2",
+                "visibility": "-",
+                "name": "players",
+                "type": "Queue<Player>"
+              },
+              {
+                "id": "f_3",
+                "visibility": "-",
+                "name": "winner",
+                "type": "Player"
+              }
+            ],
+            "methods": [
+              {
+                "id": "m_1",
+                "visibility": "+",
+                "name": "playTurn",
+                "type": "boolean",
+                "params": "row: int, col: int"
+              },
+              {
+                "id": "m_2",
+                "visibility": "+",
+                "name": "isGameOver",
+                "type": "boolean",
+                "params": ""
+              }
+            ],
+            "enumValues": []
+          }
+        },
+        "n_board": {
+          "id": "n_board",
+          "position": {
+            "x": 380,
+            "y": 80
+          },
+          "data": {
+            "name": "Board",
+            "kind": "class",
+            "fields": [
+              {
+                "id": "f_1",
+                "visibility": "-",
+                "name": "size",
+                "type": "int"
+              },
+              {
+                "id": "f_2",
+                "visibility": "-",
+                "name": "grid",
+                "type": "Piece[][]"
+              },
+              {
+                "id": "f_3",
+                "visibility": "-",
+                "name": "freeCells",
+                "type": "int"
+              }
+            ],
+            "methods": [
+              {
+                "id": "m_1",
+                "visibility": "+",
+                "name": "placePiece",
+                "type": "boolean",
+                "params": "r: int, c: int, p: Piece"
+              },
+              {
+                "id": "m_2",
+                "visibility": "+",
+                "name": "checkWin",
+                "type": "boolean",
+                "params": "r: int, c: int"
+              }
+            ],
+            "enumValues": []
+          }
+        },
+        "n_player": {
+          "id": "n_player",
+          "position": {
+            "x": 700,
+            "y": 80
+          },
+          "data": {
+            "name": "Player",
+            "kind": "class",
+            "fields": [
+              {
+                "id": "f_1",
+                "visibility": "-",
+                "name": "name",
+                "type": "String"
+              },
+              {
+                "id": "f_2",
+                "visibility": "-",
+                "name": "piece",
+                "type": "Piece"
+              }
+            ],
+            "methods": [
+              {
+                "id": "m_1",
+                "visibility": "+",
+                "name": "getPiece",
+                "type": "Piece",
+                "params": ""
+              }
+            ],
+            "enumValues": []
+          }
+        },
+        "n_piece": {
+          "id": "n_piece",
+          "position": {
+            "x": 700,
+            "y": 280
+          },
+          "data": {
+            "name": "Piece",
+            "kind": "enum",
+            "fields": [],
+            "methods": [],
+            "enumValues": [
+              "X",
+              "O",
+              "TRIANGLE"
+            ]
+          }
+        }
+      },
+      "edges": {
+        "e1": {
+          "id": "e1",
+          "source": "n_game",
+          "target": "n_board",
+          "data": {
+            "kind": "composition",
+            "label": "contains",
+            "sourceMultiplicity": "",
+            "targetMultiplicity": ""
+          }
+        },
+        "e2": {
+          "id": "e2",
+          "source": "n_game",
+          "target": "n_player",
+          "data": {
+            "kind": "association",
+            "label": "participants (2..*)",
+            "sourceMultiplicity": "",
+            "targetMultiplicity": ""
+          }
+        },
+        "e3": {
+          "id": "e3",
+          "source": "n_player",
+          "target": "n_piece",
+          "data": {
+            "kind": "association",
+            "label": "assigned piece",
+            "sourceMultiplicity": "",
+            "targetMultiplicity": ""
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "snake-and-ladder",
+    "title": "Snake and Ladder Game",
+    "difficulty": "easy",
+    "tags": [
+      "oop",
+      "strategy",
+      "game-design"
+    ],
+    "summary": "Design a multiplayer Snake and Ladder board game supporting customizable board dimensions, multiple dice, snakes, ladders, and win conditions.",
+    "requirements": [
+      "Model an $N$-sized linear board (traditionally 1 to 100).",
+      "Support Jumpers: Snakes (move backward from head to tail) and Ladders (move forward from base to top).",
+      "Support $M$ players rolling a configurable number of $K$-sided dice.",
+      "Handle landing rules: landing on a snake or ladder immediately transports the player to the jumper end position.",
+      "Support overshoot rules (exact roll required to finish at 100, or bounce back)."
+    ],
+    "constraints": [
+      "Snakes and ladders must not form an infinite cyclic loop (e.g. ladder $10 \\rightarrow 20$, snake $20 \\rightarrow 10$)."
+    ],
+    "hints": [
+      "Model both Snake and Ladder using a unified `Jumper` class with `start` and `end` coordinates.",
+      "Use a `Queue<Player>` to rotate turns cleanly among players.",
+      "Use an interface for the Dice component so unit tests can inject deterministic roll sequences without randomness."
+    ],
+    "keyEntities": [
+      "SnakeAndLadderGame",
+      "Board",
+      "Cell",
+      "Jumper",
+      "Player",
+      "Dice"
+    ],
+    "selfReviewChecklist": [
+      "Are Snakes and Ladders abstracted polymorphically (or via a unified Jumper model)?",
+      "Is dice rolling encapsulated into a testable Dice component allowing mock values in unit tests?",
+      "Does the board prevent cyclic snake/ladder loops during setup?"
+    ],
+    "referenceNotes": "### Unified Jumper Model & Game Loop\n\n```java\npublic class Jumper {\n    private final int start;\n    private final int end;\n    public Jumper(int start, int end) {\n        this.start = start;\n        this.end = end;\n    }\n    public int getStart() { return start; }\n    public int getEnd() { return end; }\n    public boolean isSnake() { return start > end; }\n    public boolean isLadder() { return start < end; }\n}\n\npublic class SnakeAndLadderGame {\n    private final Board board;\n    private final Queue<Player> players = new LinkedList<>();\n    private final Dice dice;\n    private Player winner = null;\n\n    public void playTurn() {\n        Player current = players.poll();\n        int roll = dice.roll();\n        int nextPos = current.getPosition() + roll;\n\n        if (nextPos <= board.getTotalCells()) {\n            Jumper jumper = board.getJumperAt(nextPos);\n            if (jumper != null) nextPos = jumper.getEnd();\n            current.setPosition(nextPos);\n        }\n        if (current.getPosition() == board.getTotalCells()) {\n            winner = current;\n        } else {\n            players.offer(current);\n        }\n    }\n}\n```",
+    "relatedPatternIds": [
+      "strategy"
+    ],
+    "commonMistakes": [
+      "Creating separate complex hierarchies for Snake and Ladder when both are simple coordinate mappings `(start -> end)`.",
+      "Using tight coupling with `Math.random()` rather than a mockable Dice strategy interface."
+    ],
+    "referenceDiagram": {
+      "nodes": {
+        "n_game": {
+          "id": "n_game",
+          "position": {
+            "x": 50,
+            "y": 80
+          },
+          "data": {
+            "name": "SnakeAndLadderGame",
+            "kind": "class",
+            "fields": [
+              {
+                "id": "f_1",
+                "visibility": "-",
+                "name": "board",
+                "type": "Board"
+              },
+              {
+                "id": "f_2",
+                "visibility": "-",
+                "name": "players",
+                "type": "Queue<Player>"
+              },
+              {
+                "id": "f_3",
+                "visibility": "-",
+                "name": "dice",
+                "type": "Dice"
+              }
+            ],
+            "methods": [
+              {
+                "id": "m_1",
+                "visibility": "+",
+                "name": "playTurn",
+                "type": "void",
+                "params": ""
+              },
+              {
+                "id": "m_2",
+                "visibility": "+",
+                "name": "getWinner",
+                "type": "Player",
+                "params": ""
+              }
+            ],
+            "enumValues": []
+          }
+        },
+        "n_board": {
+          "id": "n_board",
+          "position": {
+            "x": 380,
+            "y": 80
+          },
+          "data": {
+            "name": "Board",
+            "kind": "class",
+            "fields": [
+              {
+                "id": "f_1",
+                "visibility": "-",
+                "name": "size",
+                "type": "int"
+              },
+              {
+                "id": "f_2",
+                "visibility": "-",
+                "name": "jumpers",
+                "type": "Map<Integer, Jumper>"
+              }
+            ],
+            "methods": [
+              {
+                "id": "m_1",
+                "visibility": "+",
+                "name": "getNextPosition",
+                "type": "int",
+                "params": "curr: int, roll: int"
+              }
+            ],
+            "enumValues": []
+          }
+        },
+        "n_jumper": {
+          "id": "n_jumper",
+          "position": {
+            "x": 700,
+            "y": 80
+          },
+          "data": {
+            "name": "Jumper",
+            "kind": "class",
+            "fields": [
+              {
+                "id": "f_1",
+                "visibility": "-",
+                "name": "start",
+                "type": "int"
+              },
+              {
+                "id": "f_2",
+                "visibility": "-",
+                "name": "end",
+                "type": "int"
+              }
+            ],
+            "methods": [
+              {
+                "id": "m_1",
+                "visibility": "+",
+                "name": "isSnake",
+                "type": "boolean",
+                "params": ""
+              },
+              {
+                "id": "m_2",
+                "visibility": "+",
+                "name": "isLadder",
+                "type": "boolean",
+                "params": ""
+              }
+            ],
+            "enumValues": []
+          }
+        },
+        "n_player": {
+          "id": "n_player",
+          "position": {
+            "x": 250,
+            "y": 280
+          },
+          "data": {
+            "name": "Player",
+            "kind": "class",
+            "fields": [
+              {
+                "id": "f_1",
+                "visibility": "-",
+                "name": "name",
+                "type": "String"
+              },
+              {
+                "id": "f_2",
+                "visibility": "-",
+                "name": "position",
+                "type": "int"
+              }
+            ],
+            "methods": [
+              {
+                "id": "m_1",
+                "visibility": "+",
+                "name": "setPosition",
+                "type": "void",
+                "params": "pos: int"
+              }
+            ],
+            "enumValues": []
+          }
+        },
+        "n_dice": {
+          "id": "n_dice",
+          "position": {
+            "x": 550,
+            "y": 280
+          },
+          "data": {
+            "name": "Dice",
+            "kind": "class",
+            "fields": [
+              {
+                "id": "f_1",
+                "visibility": "-",
+                "name": "sides",
+                "type": "int"
+              }
+            ],
+            "methods": [
+              {
+                "id": "m_1",
+                "visibility": "+",
+                "name": "roll",
+                "type": "int",
+                "params": ""
+              }
+            ],
+            "enumValues": []
+          }
+        }
+      },
+      "edges": {
+        "e1": {
+          "id": "e1",
+          "source": "n_game",
+          "target": "n_board",
+          "data": {
+            "kind": "composition",
+            "label": "contains",
+            "sourceMultiplicity": "",
+            "targetMultiplicity": ""
+          }
+        },
+        "e2": {
+          "id": "e2",
+          "source": "n_board",
+          "target": "n_jumper",
+          "data": {
+            "kind": "association",
+            "label": "jumpers (0..*)",
+            "sourceMultiplicity": "",
+            "targetMultiplicity": ""
+          }
+        },
+        "e3": {
+          "id": "e3",
+          "source": "n_game",
+          "target": "n_player",
+          "data": {
+            "kind": "association",
+            "label": "players (2..*)",
+            "sourceMultiplicity": "",
+            "targetMultiplicity": ""
+          }
+        },
+        "e4": {
+          "id": "e4",
+          "source": "n_game",
+          "target": "n_dice",
+          "data": {
+            "kind": "association",
+            "label": "uses",
+            "sourceMultiplicity": "",
+            "targetMultiplicity": ""
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "payment-wallet",
+    "title": "Payment Wallet & Ledger",
+    "difficulty": "hard",
+    "tags": [
+      "oop",
+      "command",
+      "strategy",
+      "transactions"
+    ],
+    "summary": "Design a digital payment wallet and double-entry accounting ledger supporting wallet-to-wallet transfers, multi-currency conversion, and strict idempotency.",
+    "requirements": [
+      "Support multi-currency wallets with atomic balance top-up, withdraw, and peer-to-peer transfer.",
+      "Implement double-entry bookkeeping: every transaction consists of at least one Debit and one Credit matching in net sum.",
+      "Guarantee idempotency on transactions using unique client idempotency keys.",
+      "Maintain audit trail of all transactions and enforce positive balance invariants (no overdraft unless approved)."
+    ],
+    "constraints": [
+      "Zero money creation or loss: sum of all debits must equal sum of all credits.",
+      "Thread safety across concurrent transactions on the same wallet."
+    ],
+    "hints": [
+      "Apply the Command Pattern for transaction execution (`TransferCommand`, `DepositCommand`).",
+      "Store transactions as immutable ledger entries rather than simply mutating a single balance column.",
+      "Acquire resource locks in a deterministic lexicographical order by account ID to prevent concurrent transfer deadlocks."
+    ],
+    "keyEntities": [
+      "Wallet",
+      "Account",
+      "Transaction",
+      "LedgerEntry",
+      "TransactionCommand",
+      "IdempotencyManager"
+    ],
+    "selfReviewChecklist": [
+      "Is the double-entry accounting invariant preserved on every balance movement?",
+      "Are duplicate requests with identical idempotency keys safely deduplicated?",
+      "Are wallet locks acquired in a consistent ordering (e.g. by account ID) to prevent deadlocks?"
+    ],
+    "referenceNotes": "### Double-Entry Ledger & Lock Ordering\n\nTo prevent deadlocks during transfers between Account A and Account B, always acquire locks ordered by Account ID:\n\n```java\npublic class WalletService {\n    private final ConcurrentHashMap<String, Account> accounts = new ConcurrentHashMap<>();\n    private final Set<String> processedKeys = Collections.newSetFromMap(new ConcurrentHashMap<>());\n\n    public boolean transfer(String idempotencyKey, String fromId, String toId, BigDecimal amount) {\n        if (!processedKeys.add(idempotencyKey)) {\n            // Already processed; return cached success\n            return true;\n        }\n\n        Account firstLock = fromId.compareTo(toId) < 0 ? accounts.get(fromId) : accounts.get(toId);\n        Account secondLock = fromId.compareTo(toId) < 0 ? accounts.get(toId) : accounts.get(fromId);\n\n        synchronized (firstLock) {\n            synchronized (secondLock) {\n                Account from = accounts.get(fromId);\n                Account to = accounts.get(toId);\n                if (from.getBalance().compareTo(amount) < 0) return false;\n\n                from.debit(amount);\n                to.credit(amount);\n                Ledger.record(new LedgerEntry(fromId, toId, amount));\n                return true;\n            }\n        }\n    }\n}\n```",
+    "relatedPatternIds": [
+      "command",
+      "strategy"
+    ],
+    "commonMistakes": [
+      "Mutating account balance in-place without generating immutable double-entry ledger entries.",
+      "Arbitrary lock acquisition during peer transfers, causing distributed deadlocks."
+    ],
+    "referenceDiagram": {
+      "nodes": {
+        "n_wallet": {
+          "id": "n_wallet",
+          "position": {
+            "x": 50,
+            "y": 80
+          },
+          "data": {
+            "name": "WalletService",
+            "kind": "class",
+            "fields": [
+              {
+                "id": "f_1",
+                "visibility": "-",
+                "name": "accounts",
+                "type": "Map<String, Account>"
+              },
+              {
+                "id": "f_2",
+                "visibility": "-",
+                "name": "idempotency",
+                "type": "IdempotencyManager"
+              }
+            ],
+            "methods": [
+              {
+                "id": "m_1",
+                "visibility": "+",
+                "name": "transfer",
+                "type": "boolean",
+                "params": "key: String, from: String, to: String, amt: double"
+              }
+            ],
+            "enumValues": []
+          }
+        },
+        "n_account": {
+          "id": "n_account",
+          "position": {
+            "x": 380,
+            "y": 80
+          },
+          "data": {
+            "name": "Account",
+            "kind": "class",
+            "fields": [
+              {
+                "id": "f_1",
+                "visibility": "-",
+                "name": "accountId",
+                "type": "String"
+              },
+              {
+                "id": "f_2",
+                "visibility": "-",
+                "name": "balance",
+                "type": "double"
+              },
+              {
+                "id": "f_3",
+                "visibility": "-",
+                "name": "currency",
+                "type": "String"
+              }
+            ],
+            "methods": [
+              {
+                "id": "m_1",
+                "visibility": "+",
+                "name": "debit",
+                "type": "void",
+                "params": "amt: double"
+              },
+              {
+                "id": "m_2",
+                "visibility": "+",
+                "name": "credit",
+                "type": "void",
+                "params": "amt: double"
+              }
+            ],
+            "enumValues": []
+          }
+        },
+        "n_ledger": {
+          "id": "n_ledger",
+          "position": {
+            "x": 700,
+            "y": 80
+          },
+          "data": {
+            "name": "Ledger",
+            "kind": "class",
+            "fields": [
+              {
+                "id": "f_1",
+                "visibility": "-",
+                "name": "entries",
+                "type": "List<LedgerEntry>"
+              }
+            ],
+            "methods": [
+              {
+                "id": "m_1",
+                "visibility": "+",
+                "name": "record",
+                "type": "void",
+                "params": "entry: LedgerEntry"
+              }
+            ],
+            "enumValues": []
+          }
+        },
+        "n_cmd": {
+          "id": "n_cmd",
+          "position": {
+            "x": 380,
+            "y": 280
+          },
+          "data": {
+            "name": "TransactionCommand",
+            "kind": "interface",
+            "fields": [],
+            "methods": [
+              {
+                "id": "m_1",
+                "visibility": "+",
+                "name": "execute",
+                "type": "boolean",
+                "params": ""
+              },
+              {
+                "id": "m_2",
+                "visibility": "+",
+                "name": "rollback",
+                "type": "void",
+                "params": ""
+              }
+            ],
+            "enumValues": []
+          }
+        },
+        "n_transfer": {
+          "id": "n_transfer",
+          "position": {
+            "x": 700,
+            "y": 280
+          },
+          "data": {
+            "name": "TransferCommand",
+            "kind": "class",
+            "fields": [
+              {
+                "id": "f_1",
+                "visibility": "-",
+                "name": "fromAccount",
+                "type": "Account"
+              },
+              {
+                "id": "f_2",
+                "visibility": "-",
+                "name": "toAccount",
+                "type": "Account"
+              },
+              {
+                "id": "f_3",
+                "visibility": "-",
+                "name": "amount",
+                "type": "double"
+              }
+            ],
+            "methods": [
+              {
+                "id": "m_1",
+                "visibility": "+",
+                "name": "execute",
+                "type": "boolean",
+                "params": ""
+              }
+            ],
+            "enumValues": []
+          }
+        }
+      },
+      "edges": {
+        "e1": {
+          "id": "e1",
+          "source": "n_wallet",
+          "target": "n_account",
+          "data": {
+            "kind": "aggregation",
+            "label": "manages (0..*)",
+            "sourceMultiplicity": "",
+            "targetMultiplicity": ""
+          }
+        },
+        "e2": {
+          "id": "e2",
+          "source": "n_wallet",
+          "target": "n_ledger",
+          "data": {
+            "kind": "association",
+            "label": "records to",
+            "sourceMultiplicity": "",
+            "targetMultiplicity": ""
+          }
+        },
+        "e3": {
+          "id": "e3",
+          "source": "n_transfer",
+          "target": "n_cmd",
+          "data": {
+            "kind": "implementation",
+            "label": "",
+            "sourceMultiplicity": "",
+            "targetMultiplicity": ""
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "notification-service-lld",
+    "title": "Notification Service (Multiple Channels)",
+    "difficulty": "medium",
+    "tags": [
+      "oop",
+      "strategy",
+      "factory-method",
+      "observer"
+    ],
+    "summary": "Design an enterprise notification dispatching service supporting Email, SMS, Push, and Webhook channels with priority queues, rate limits, and fallback strategies.",
+    "requirements": [
+      "Support multiple notification delivery channels: Email (SendGrid), SMS (Twilio), Mobile Push (FCM/APNs), Webhook.",
+      "Support notification prioritization (CRITICAL/OTP > PROMOTIONAL).",
+      "Allow user opt-out preferences per channel and rate limiting (max 5 SMS/hour per user).",
+      "Implement automatic fallback (e.g. if SMS fails, retry via WhatsApp or Email)."
+    ],
+    "constraints": [
+      "Third-party vendor failures must not crash the notification pipeline.",
+      "High throughput: dispatching must be asynchronous."
+    ],
+    "hints": [
+      "Use the Strategy Pattern for `NotificationChannel` with implementations `EmailChannel`, `SmsChannel`, `PushChannel`.",
+      "Use Factory Method to instantiate channels based on notification metadata.",
+      "Check recipient opt-out preferences and rate limit quotas before issuing network calls to external delivery providers."
+    ],
+    "keyEntities": [
+      "NotificationService",
+      "Notification",
+      "NotificationChannel",
+      "EmailChannel",
+      "SmsChannel",
+      "PushChannel",
+      "ChannelFactory"
+    ],
+    "selfReviewChecklist": [
+      "Can a new delivery channel (e.g. Slack or Discord) be plugged in without modifying core dispatch logic?",
+      "Is channel selection decoupled via a Factory or Strategy interface?",
+      "Are user channel preferences checked prior to calling vendor delivery APIs?"
+    ],
+    "referenceNotes": "### Extensible Notification Dispatch Architecture\n\n```java\npublic interface NotificationChannel {\n    boolean send(Notification notification);\n}\n\npublic class EmailChannel implements NotificationChannel {\n    @Override\n    public boolean send(Notification notification) {\n        System.out.println(\"Sending email to \" + notification.getRecipient() + \": \" + notification.getBody());\n        return true;\n    }\n}\n\npublic class SmsChannel implements NotificationChannel {\n    @Override\n    public boolean send(Notification notification) {\n        System.out.println(\"Sending SMS to \" + notification.getRecipient() + \": \" + notification.getBody());\n        return true;\n    }\n}\n\npublic class NotificationService {\n    private final Map<ChannelType, NotificationChannel> channels = new EnumMap<>(ChannelType.class);\n\n    public void registerChannel(ChannelType type, NotificationChannel channel) {\n        channels.put(type, channel);\n    }\n\n    public boolean dispatch(Notification notification) {\n        NotificationChannel channel = channels.get(notification.getChannelType());\n        if (channel == null) throw new IllegalArgumentException(\"Unsupported channel\");\n        return channel.send(notification);\n    }\n}\n```",
+    "relatedPatternIds": [
+      "strategy",
+      "factory-method",
+      "observer"
+    ],
+    "commonMistakes": [
+      "Hardcoding `if (type == SMS) sendTwilio()` blocks inside business services.",
+      "Synchronously blocking user registration threads waiting for external SMS vendor HTTP roundtrips."
+    ],
+    "referenceDiagram": {
+      "nodes": {
+        "n_service": {
+          "id": "n_service",
+          "position": {
+            "x": 50,
+            "y": 80
+          },
+          "data": {
+            "name": "NotificationService",
+            "kind": "class",
+            "fields": [
+              {
+                "id": "f_1",
+                "visibility": "-",
+                "name": "channels",
+                "type": "Map<ChannelType, NotificationChannel>"
+              }
+            ],
+            "methods": [
+              {
+                "id": "m_1",
+                "visibility": "+",
+                "name": "dispatch",
+                "type": "boolean",
+                "params": "n: Notification"
+              },
+              {
+                "id": "m_2",
+                "visibility": "+",
+                "name": "registerChannel",
+                "type": "void",
+                "params": "t: ChannelType, c: NotificationChannel"
+              }
+            ],
+            "enumValues": []
+          }
+        },
+        "n_channel": {
+          "id": "n_channel",
+          "position": {
+            "x": 420,
+            "y": 80
+          },
+          "data": {
+            "name": "NotificationChannel",
+            "kind": "interface",
+            "fields": [],
+            "methods": [
+              {
+                "id": "m_1",
+                "visibility": "+",
+                "name": "send",
+                "type": "boolean",
+                "params": "n: Notification"
+              }
+            ],
+            "enumValues": []
+          }
+        },
+        "n_email": {
+          "id": "n_email",
+          "position": {
+            "x": 250,
+            "y": 280
+          },
+          "data": {
+            "name": "EmailChannel",
+            "kind": "class",
+            "fields": [
+              {
+                "id": "f_1",
+                "visibility": "-",
+                "name": "smtpHost",
+                "type": "String"
+              }
+            ],
+            "methods": [
+              {
+                "id": "m_1",
+                "visibility": "+",
+                "name": "send",
+                "type": "boolean",
+                "params": "n: Notification"
+              }
+            ],
+            "enumValues": []
+          }
+        },
+        "n_sms": {
+          "id": "n_sms",
+          "position": {
+            "x": 480,
+            "y": 280
+          },
+          "data": {
+            "name": "SmsChannel",
+            "kind": "class",
+            "fields": [
+              {
+                "id": "f_1",
+                "visibility": "-",
+                "name": "twilioClient",
+                "type": "Object"
+              }
+            ],
+            "methods": [
+              {
+                "id": "m_1",
+                "visibility": "+",
+                "name": "send",
+                "type": "boolean",
+                "params": "n: Notification"
+              }
+            ],
+            "enumValues": []
+          }
+        },
+        "n_push": {
+          "id": "n_push",
+          "position": {
+            "x": 710,
+            "y": 280
+          },
+          "data": {
+            "name": "PushChannel",
+            "kind": "class",
+            "fields": [
+              {
+                "id": "f_1",
+                "visibility": "-",
+                "name": "fcmToken",
+                "type": "String"
+              }
+            ],
+            "methods": [
+              {
+                "id": "m_1",
+                "visibility": "+",
+                "name": "send",
+                "type": "boolean",
+                "params": "n: Notification"
+              }
+            ],
+            "enumValues": []
+          }
+        }
+      },
+      "edges": {
+        "e1": {
+          "id": "e1",
+          "source": "n_service",
+          "target": "n_channel",
+          "data": {
+            "kind": "association",
+            "label": "delegates to (1..*)",
+            "sourceMultiplicity": "",
+            "targetMultiplicity": ""
+          }
+        },
+        "e2": {
+          "id": "e2",
+          "source": "n_email",
+          "target": "n_channel",
+          "data": {
+            "kind": "implementation",
+            "label": "",
+            "sourceMultiplicity": "",
+            "targetMultiplicity": ""
+          }
+        },
+        "e3": {
+          "id": "e3",
+          "source": "n_sms",
+          "target": "n_channel",
+          "data": {
+            "kind": "implementation",
+            "label": "",
+            "sourceMultiplicity": "",
+            "targetMultiplicity": ""
+          }
+        },
+        "e4": {
+          "id": "e4",
+          "source": "n_push",
+          "target": "n_channel",
+          "data": {
+            "kind": "implementation",
+            "label": "",
+            "sourceMultiplicity": "",
+            "targetMultiplicity": ""
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "job-scheduler",
+    "title": "Job Scheduler / Task Queue",
+    "difficulty": "hard",
+    "tags": [
+      "oop",
+      "command",
+      "observer",
+      "concurrency"
+    ],
+    "summary": "Design an in-process thread-safe task scheduler supporting one-time delayed tasks, recurring fixed-rate jobs, cron expressions, and prioritized worker execution.",
+    "requirements": [
+      "Support scheduling one-time tasks with execution delay $\\Delta t$.",
+      "Support scheduling recurring tasks with fixed interval delay or cron expressions.",
+      "Execute scheduled tasks across a bounded worker thread pool.",
+      "Support task cancellation and priority execution (High > Normal > Low).",
+      "Handle task exceptions without killing scheduler supervisor threads."
+    ],
+    "constraints": [
+      "Scheduler must not busy-wait in a high-CPU loop; use blocking wait until next due task.",
+      "Graceful shutdown must drain executing jobs without abrupt thread termination."
+    ],
+    "hints": [
+      "Use a `PriorityBlockingQueue<ScheduledTask>` ordered by `scheduledExecutionTime`.",
+      "Worker supervisor thread sleeps until `queue.peek().getExecutionTime() - System.currentTimeMillis()`.",
+      "Wrap user task execution in a try-catch block inside the worker runnable so an unhandled exception in one job never crashes the scheduler."
+    ],
+    "keyEntities": [
+      "JobScheduler",
+      "Job",
+      "ScheduledTask",
+      "ExecutionStrategy",
+      "WorkerThreadPool"
+    ],
+    "selfReviewChecklist": [
+      "Does the scheduler prevent busy-waiting when no tasks are due?",
+      "Are task commands executed independently across thread pool workers?",
+      "Can tasks be safely cancelled before their execution time arrives?"
+    ],
+    "referenceNotes": "### DelayQueue Worker Engine\n\n```java\npublic interface Job {\n    void execute();\n}\n\npublic class ScheduledTask implements Comparable<ScheduledTask> {\n    private final String taskId;\n    private final Job job;\n    private final long executionTime;\n    private volatile boolean cancelled = false;\n\n    public ScheduledTask(String taskId, Job job, long executionTime) {\n        this.taskId = taskId; this.job = job; this.executionTime = executionTime;\n    }\n    public void cancel() { this.cancelled = true; }\n    public boolean isCancelled() { return cancelled; }\n    public void run() { if (!cancelled) job.execute(); }\n\n    @Override\n    public int compareTo(ScheduledTask other) {\n        return Long.compare(this.executionTime, other.executionTime);\n    }\n}\n```",
+    "relatedPatternIds": [
+      "command",
+      "observer"
+    ],
+    "commonMistakes": [
+      "Polling the queue in an unbounded `while(true) { check(); }` loop, consuming 100% CPU.",
+      "Uncaught exceptions in a user job terminating the primary scheduling thread."
+    ],
+    "referenceDiagram": {
+      "nodes": {
+        "n_scheduler": {
+          "id": "n_scheduler",
+          "position": {
+            "x": 50,
+            "y": 80
+          },
+          "data": {
+            "name": "JobScheduler",
+            "kind": "class",
+            "fields": [
+              {
+                "id": "f_1",
+                "visibility": "-",
+                "name": "taskQueue",
+                "type": "PriorityBlockingQueue<ScheduledTask>"
+              },
+              {
+                "id": "f_2",
+                "visibility": "-",
+                "name": "workerPool",
+                "type": "ExecutorService"
+              }
+            ],
+            "methods": [
+              {
+                "id": "m_1",
+                "visibility": "+",
+                "name": "schedule",
+                "type": "String",
+                "params": "job: Job, delayMs: long"
+              },
+              {
+                "id": "m_2",
+                "visibility": "+",
+                "name": "cancel",
+                "type": "boolean",
+                "params": "taskId: String"
+              }
+            ],
+            "enumValues": []
+          }
+        },
+        "n_job": {
+          "id": "n_job",
+          "position": {
+            "x": 420,
+            "y": 80
+          },
+          "data": {
+            "name": "Job",
+            "kind": "interface",
+            "fields": [],
+            "methods": [
+              {
+                "id": "m_1",
+                "visibility": "+",
+                "name": "execute",
+                "type": "void",
+                "params": ""
+              }
+            ],
+            "enumValues": []
+          }
+        },
+        "n_task": {
+          "id": "n_task",
+          "position": {
+            "x": 700,
+            "y": 80
+          },
+          "data": {
+            "name": "ScheduledTask",
+            "kind": "class",
+            "fields": [
+              {
+                "id": "f_1",
+                "visibility": "-",
+                "name": "job",
+                "type": "Job"
+              },
+              {
+                "id": "f_2",
+                "visibility": "-",
+                "name": "executionTime",
+                "type": "long"
+              },
+              {
+                "id": "f_3",
+                "visibility": "-",
+                "name": "isCancelled",
+                "type": "boolean"
+              }
+            ],
+            "methods": [
+              {
+                "id": "m_1",
+                "visibility": "+",
+                "name": "run",
+                "type": "void",
+                "params": ""
+              },
+              {
+                "id": "m_2",
+                "visibility": "+",
+                "name": "cancel",
+                "type": "void",
+                "params": ""
+              }
+            ],
+            "enumValues": []
+          }
+        },
+        "n_emailjob": {
+          "id": "n_emailjob",
+          "position": {
+            "x": 420,
+            "y": 280
+          },
+          "data": {
+            "name": "EmailDigestJob",
+            "kind": "class",
+            "fields": [
+              {
+                "id": "f_1",
+                "visibility": "-",
+                "name": "userId",
+                "type": "String"
+              }
+            ],
+            "methods": [
+              {
+                "id": "m_1",
+                "visibility": "+",
+                "name": "execute",
+                "type": "void",
+                "params": ""
+              }
+            ],
+            "enumValues": []
+          }
+        }
+      },
+      "edges": {
+        "e1": {
+          "id": "e1",
+          "source": "n_scheduler",
+          "target": "n_task",
+          "data": {
+            "kind": "aggregation",
+            "label": "schedules (0..*)",
+            "sourceMultiplicity": "",
+            "targetMultiplicity": ""
+          }
+        },
+        "e2": {
+          "id": "e2",
+          "source": "n_task",
+          "target": "n_job",
+          "data": {
+            "kind": "association",
+            "label": "executes",
+            "sourceMultiplicity": "",
+            "targetMultiplicity": ""
+          }
+        },
+        "e3": {
+          "id": "e3",
+          "source": "n_emailjob",
+          "target": "n_job",
+          "data": {
+            "kind": "implementation",
+            "label": "",
+            "sourceMultiplicity": "",
+            "targetMultiplicity": ""
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "in-memory-ttl-cache",
+    "title": "In-Memory Cache with TTL",
+    "difficulty": "medium",
+    "tags": [
+      "oop",
+      "strategy",
+      "singleton",
+      "concurrency"
+    ],
+    "summary": "Design a thread-safe in-memory key-value cache supporting Time-To-Live (TTL) expiration, passive on-access eviction, and active background cleanup.",
+    "requirements": [
+      "Support basic cache operations: `get(key)`, `put(key, value, ttlMs)`, `remove(key)`.",
+      "Enforce lazy/passive TTL expiration on `get()`: return `null` and evict key if TTL has expired.",
+      "Implement active background periodic cleanup thread to prevent memory leaks from unread expired keys.",
+      "Thread-safe reads and writes using fine-grained locking or ReadWriteLock."
+    ],
+    "constraints": [
+      "Background cleaner thread must not block cache reads.",
+      "Memory usage should be bounded."
+    ],
+    "hints": [
+      "Wrap values in a `CacheEntry<V>` holding value and `expiryTime = now + ttl`.",
+      "Use `ReentrantReadWriteLock` to allow multiple concurrent readers while serializing writes.",
+      "Provide both lazy eviction during get() calls and periodic background active sweeps to prevent expired unread keys from leaking memory."
+    ],
+    "keyEntities": [
+      "TtlCache",
+      "CacheEntry",
+      "EvictionStrategy",
+      "TtlExpiryCleaner",
+      "ReadWriteLock"
+    ],
+    "selfReviewChecklist": [
+      "Does `get()` check for expired TTL before returning the cached value?",
+      "Is there an active cleaner thread purging expired entries that are never queried again?",
+      "Are read operations concurrent via ReadWriteLock?"
+    ],
+    "referenceNotes": "### Dual Passive and Active TTL Eviction Strategy\n\n```java\npublic class TtlCache<K, V> {\n    private static class CacheEntry<V> {\n        final V value;\n        final long expiryTime;\n        CacheEntry(V value, long ttlMs) {\n            this.value = value;\n            this.expiryTime = System.currentTimeMillis() + ttlMs;\n        }\n        boolean isExpired() { return System.currentTimeMillis() > expiryTime; }\n    }\n\n    private final Map<K, CacheEntry<V>> store = new ConcurrentHashMap<>();\n\n    public V get(K key) {\n        CacheEntry<V> entry = store.get(key);\n        if (entry == null) return null;\n        if (entry.isExpired()) {\n            store.remove(key); // passive eviction\n            return null;\n        }\n        return entry.value;\n    }\n\n    public void put(K key, V value, long ttlMs) {\n        store.put(key, new CacheEntry<>(value, ttlMs));\n    }\n\n    // Active cleanup method run by scheduled background executor\n    public void cleanupExpired() {\n        long now = System.currentTimeMillis();\n        store.entrySet().removeIf(e -> e.getValue().expiryTime < now);\n    }\n}\n```",
+    "relatedPatternIds": [
+      "strategy",
+      "singleton"
+    ],
+    "commonMistakes": [
+      "Relying solely on passive eviction: if keys are never accessed again, memory leaks indefinitely.",
+      "Running active cleanup with `synchronized(this)`, freezing all readers during sweep."
+    ],
+    "referenceDiagram": {
+      "nodes": {
+        "n_cache": {
+          "id": "n_cache",
+          "position": {
+            "x": 50,
+            "y": 80
+          },
+          "data": {
+            "name": "TtlCache",
+            "kind": "class",
+            "fields": [
+              {
+                "id": "f_1",
+                "visibility": "-",
+                "name": "store",
+                "type": "Map<K, CacheEntry<V>>"
+              },
+              {
+                "id": "f_2",
+                "visibility": "-",
+                "name": "cleaner",
+                "type": "TtlExpiryCleaner"
+              }
+            ],
+            "methods": [
+              {
+                "id": "m_1",
+                "visibility": "+",
+                "name": "get",
+                "type": "V",
+                "params": "key: K"
+              },
+              {
+                "id": "m_2",
+                "visibility": "+",
+                "name": "put",
+                "type": "void",
+                "params": "k: K, v: V, ttlMs: long"
+              },
+              {
+                "id": "m_3",
+                "visibility": "+",
+                "name": "remove",
+                "type": "void",
+                "params": "k: K"
+              }
+            ],
+            "enumValues": []
+          }
+        },
+        "n_entry": {
+          "id": "n_entry",
+          "position": {
+            "x": 420,
+            "y": 80
+          },
+          "data": {
+            "name": "CacheEntry",
+            "kind": "class",
+            "fields": [
+              {
+                "id": "f_1",
+                "visibility": "-",
+                "name": "value",
+                "type": "V"
+              },
+              {
+                "id": "f_2",
+                "visibility": "-",
+                "name": "expiryTime",
+                "type": "long"
+              }
+            ],
+            "methods": [
+              {
+                "id": "m_1",
+                "visibility": "+",
+                "name": "isExpired",
+                "type": "boolean",
+                "params": ""
+              }
+            ],
+            "enumValues": []
+          }
+        },
+        "n_cleaner": {
+          "id": "n_cleaner",
+          "position": {
+            "x": 720,
+            "y": 80
+          },
+          "data": {
+            "name": "TtlExpiryCleaner",
+            "kind": "class",
+            "fields": [
+              {
+                "id": "f_1",
+                "visibility": "-",
+                "name": "intervalMs",
+                "type": "long"
+              }
+            ],
+            "methods": [
+              {
+                "id": "m_1",
+                "visibility": "+",
+                "name": "clean",
+                "type": "void",
+                "params": "c: TtlCache"
+              }
+            ],
+            "enumValues": []
+          }
+        }
+      },
+      "edges": {
+        "e1": {
+          "id": "e1",
+          "source": "n_cache",
+          "target": "n_entry",
+          "data": {
+            "kind": "composition",
+            "label": "stores (0..*)",
+            "sourceMultiplicity": "",
+            "targetMultiplicity": ""
+          }
+        },
+        "e2": {
+          "id": "e2",
+          "source": "n_cache",
+          "target": "n_cleaner",
+          "data": {
+            "kind": "association",
+            "label": "scheduled by",
+            "sourceMultiplicity": "",
+            "targetMultiplicity": ""
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "pub-sub-system",
+    "title": "Pub-Sub System",
+    "difficulty": "hard",
+    "tags": [
+      "oop",
+      "observer",
+      "singleton",
+      "concurrency"
+    ],
+    "summary": "Design an in-memory topic-based Publish-Subscribe broker supporting multiple publishers, topic subscriptions, push/pull delivery, and subscriber offsets.",
+    "requirements": [
+      "Support topic creation, subscriber registration, and message publishing.",
+      "Deliver published messages to all active topic subscribers (fan-out).",
+      "Allow subscribers to consume messages asynchronously without blocking the publisher thread.",
+      "Support both push delivery (dispatch to subscriber callback) and pull delivery (subscriber pulls next offset)."
+    ],
+    "constraints": [
+      "A slow subscriber must not block message delivery to other faster subscribers on the same topic."
+    ],
+    "hints": [
+      "Use the Observer Pattern: Topic maintains a list of Subscriber observers.",
+      "Give each subscriber an isolated message queue (`BlockingQueue<Message>`) so slow consumers don't block the broker.",
+      "Dispatch subscriber message delivery asynchronously via a thread pool or CompletableFuture so slow subscribers do not delay other subscribers."
+    ],
+    "keyEntities": [
+      "PubSubBroker",
+      "Topic",
+      "Subscriber",
+      "Publisher",
+      "Message",
+      "PushDispatcher"
+    ],
+    "selfReviewChecklist": [
+      "Does each subscriber maintain independent message delivery isolation?",
+      "Can multiple publishers write concurrently to the same topic safely?",
+      "Is publisher throughput protected from slow subscriber latency?"
+    ],
+    "referenceNotes": "### Isolated Subscriber Queues with Dispatcher Threads\n\n```java\npublic interface Subscriber {\n    String getId();\n    void onMessage(Message message);\n}\n\npublic class Topic {\n    private final String name;\n    private final List<Message> messageLog = new CopyOnWriteArrayList<>();\n    private final Set<Subscriber> subscribers = ConcurrentHashMap.newKeySet();\n\n    public Topic(String name) { this.name = name; }\n    public void addSubscriber(Subscriber s) { subscribers.add(s); }\n    public void publish(Message msg) {\n        messageLog.add(msg);\n        for (Subscriber s : subscribers) {\n            CompletableFuture.runAsync(() -> s.onMessage(msg));\n        }\n    }\n}\n\npublic class PubSubBroker {\n    private final ConcurrentHashMap<String, Topic> topics = new ConcurrentHashMap<>();\n    public Topic getOrCreateTopic(String name) {\n        return topics.computeIfAbsent(name, Topic::new);\n    }\n}\n```",
+    "relatedPatternIds": [
+      "observer",
+      "singleton"
+    ],
+    "commonMistakes": [
+      "Invoking subscriber handlers synchronously inside `publish()`, allowing one hanging subscriber to hang all publishing.",
+      "Failing to support thread-safe subscriber registration during active broadcasts."
+    ],
+    "referenceDiagram": {
+      "nodes": {
+        "n_broker": {
+          "id": "n_broker",
+          "position": {
+            "x": 50,
+            "y": 80
+          },
+          "data": {
+            "name": "PubSubBroker",
+            "kind": "class",
+            "fields": [
+              {
+                "id": "f_1",
+                "visibility": "-",
+                "name": "topics",
+                "type": "Map<String, Topic>"
+              }
+            ],
+            "methods": [
+              {
+                "id": "m_1",
+                "visibility": "+",
+                "name": "createTopic",
+                "type": "Topic",
+                "params": "name: String"
+              },
+              {
+                "id": "m_2",
+                "visibility": "+",
+                "name": "publish",
+                "type": "void",
+                "params": "topic: String, msg: Message"
+              }
+            ],
+            "enumValues": []
+          }
+        },
+        "n_topic": {
+          "id": "n_topic",
+          "position": {
+            "x": 420,
+            "y": 80
+          },
+          "data": {
+            "name": "Topic",
+            "kind": "class",
+            "fields": [
+              {
+                "id": "f_1",
+                "visibility": "-",
+                "name": "name",
+                "type": "String"
+              },
+              {
+                "id": "f_2",
+                "visibility": "-",
+                "name": "subscribers",
+                "type": "List<Subscriber>"
+              }
+            ],
+            "methods": [
+              {
+                "id": "m_1",
+                "visibility": "+",
+                "name": "publish",
+                "type": "void",
+                "params": "msg: Message"
+              },
+              {
+                "id": "m_2",
+                "visibility": "+",
+                "name": "subscribe",
+                "type": "void",
+                "params": "s: Subscriber"
+              }
+            ],
+            "enumValues": []
+          }
+        },
+        "n_sub": {
+          "id": "n_sub",
+          "position": {
+            "x": 720,
+            "y": 80
+          },
+          "data": {
+            "name": "Subscriber",
+            "kind": "interface",
+            "fields": [],
+            "methods": [
+              {
+                "id": "m_1",
+                "visibility": "+",
+                "name": "onMessage",
+                "type": "void",
+                "params": "msg: Message"
+              }
+            ],
+            "enumValues": []
+          }
+        },
+        "n_msg": {
+          "id": "n_msg",
+          "position": {
+            "x": 420,
+            "y": 280
+          },
+          "data": {
+            "name": "Message",
+            "kind": "class",
+            "fields": [
+              {
+                "id": "f_1",
+                "visibility": "-",
+                "name": "id",
+                "type": "String"
+              },
+              {
+                "id": "f_2",
+                "visibility": "-",
+                "name": "payload",
+                "type": "String"
+              },
+              {
+                "id": "f_3",
+                "visibility": "-",
+                "name": "timestamp",
+                "type": "long"
+              }
+            ],
+            "methods": [
+              {
+                "id": "m_1",
+                "visibility": "+",
+                "name": "getPayload",
+                "type": "String",
+                "params": ""
+              }
+            ],
+            "enumValues": []
+          }
+        }
+      },
+      "edges": {
+        "e1": {
+          "id": "e1",
+          "source": "n_broker",
+          "target": "n_topic",
+          "data": {
+            "kind": "composition",
+            "label": "manages (0..*)",
+            "sourceMultiplicity": "",
+            "targetMultiplicity": ""
+          }
+        },
+        "e2": {
+          "id": "e2",
+          "source": "n_topic",
+          "target": "n_sub",
+          "data": {
+            "kind": "association",
+            "label": "fans out to (0..*)",
+            "sourceMultiplicity": "",
+            "targetMultiplicity": ""
+          }
+        },
+        "e3": {
+          "id": "e3",
+          "source": "n_topic",
+          "target": "n_msg",
+          "data": {
+            "kind": "association",
+            "label": "contains (0..*)",
+            "sourceMultiplicity": "",
+            "targetMultiplicity": ""
+          }
+        }
+      }
+    }
   }
 ]

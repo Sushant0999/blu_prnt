@@ -16,6 +16,7 @@ import { LldProblemWorkspacePage } from './pages/LldProblemWorkspacePage';
 import { LldPatternsPage } from './pages/LldPatternsPage';
 import { LldPatternDetailPage } from './pages/LldPatternDetailPage';
 import { LldDesignsPage } from './pages/LldDesignsPage';
+import { LldFoundationsPage } from './pages/LldFoundationsPage';
 import { useThemeStore } from './stores/useThemeStore';
 
 export const App: React.FC = () => {
@@ -45,6 +46,7 @@ export const App: React.FC = () => {
           <Route path="/cases" element={<CasesPage />} />
           <Route path="/interview" element={<InterviewPage />} />
           <Route path="/lld" element={<LldHomePage />} />
+          <Route path="/lld/foundations" element={<LldFoundationsPage />} />
           <Route path="/lld/problems" element={<LldProblemsPage />} />
           <Route path="/lld/problems/:id" element={<LldProblemWorkspacePage />} />
           <Route path="/lld/patterns" element={<LldPatternsPage />} />
