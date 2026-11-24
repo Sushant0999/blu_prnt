@@ -3,16 +3,23 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 export interface FlowNode {
   id: string;
   label: string;
-  kind: 'source' | 'hub' | 'card' | string;
+  kind: 'source' | 'hub' | 'card' | 'ring' | 'mesh' | string;
   position?: { x: number; y: number };
   sublabel?: string;
-  icon?: 'globe' | 'split' | 'server' | React.ReactNode;
+  color?: string; // e.g. '#2e6930', '#0ea5e9', '#8b5cf6', '#f59e0b', etc.
+  icon?: string; // 'globe' | 'split' | 'bucket' | 'ring' | 'circuit' | 'cache' | 'filter' | 'queue' | 'cloud' | 'shard' | 'replica' | 'raft' | 'txn' | 'retry' | 'lock' | 'cpu' | 'database' | 'tree' | 'mesh' | React.ReactNode;
+  badge?: string; // e.g. "HPA", "2PC", "TTL", "k=3", "16KB"
+  detail?: string; // bottom text override e.g. "3 active · 5 done" or custom domain metric
+  shape?: 'circle' | 'rect' | 'cylinder' | 'hexagon' | 'diamond' | 'card';
 }
 
 export interface FlowEdge {
   id: string;
   source: string;
   target: string;
+  label?: string;
+  style?: 'solid' | 'dashed' | 'dotted';
+  color?: string;
 }
 
 export interface FlowPacket {
@@ -50,6 +57,7 @@ export interface FlowDiagramProps {
   isPaused?: boolean;
   className?: string;
   ariaLabel?: string;
+  topology?: string;
   onToggleNodeSlow?: (nodeId: string) => void;
 }
 
@@ -64,6 +72,9 @@ interface EdgeGeometry {
   target: string;
   start: Point;
   end: Point;
+  label?: string;
+  style?: 'solid' | 'dashed' | 'dotted';
+  color?: string;
 }
 
 /**
@@ -83,7 +94,7 @@ function computeLayout(nodes: FlowNode[], edges: FlowEdge[]) {
   // Center vertical line for source and hub
   const cy = 135;
 
-  // 1. Source nodes (Clients)
+  // 1. Source nodes (Clients / Ingress)
   sourceNodes.forEach((node, idx) => {
     if (node.position) {
       nodePositions.set(node.id, node.position);
@@ -92,7 +103,7 @@ function computeLayout(nodes: FlowNode[], edges: FlowEdge[]) {
     }
   });
 
-  // 2. Hub nodes (Balancer)
+  // 2. Hub nodes (Router / Controller / Filter / Buffer)
   hubNodes.forEach((node, idx) => {
     if (node.position) {
       nodePositions.set(node.id, node.position);
@@ -101,7 +112,7 @@ function computeLayout(nodes: FlowNode[], edges: FlowEdge[]) {
     }
   });
 
-  // 3. Card nodes (Servers) stacked vertically on the right
+  // 3. Card nodes stacked vertically on the right
   const cardWidth = 160;
   const cardHeight = 56;
   const cardX = 310;
@@ -179,6 +190,9 @@ function computeLayout(nodes: FlowNode[], edges: FlowEdge[]) {
       target: edge.target,
       start,
       end,
+      label: edge.label,
+      style: edge.style,
+      color: edge.color,
     });
   });
 
@@ -191,8 +205,174 @@ function computeLayout(nodes: FlowNode[], edges: FlowEdge[]) {
 }
 
 /**
+ * Renders distinct SVG icons for different architecture patterns.
+ */
+function renderArchitectureIcon(icon: string | undefined, color: string = '#ffffff') {
+  switch (icon) {
+    case 'bucket': // Rate Limiter
+      return (
+        <g stroke={color} fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M-9,-8 L9,-8 L6,9 L-6,9 Z" />
+          <path d="M-6,0 C-3,2 3,2 6,0" strokeDasharray="2 2" />
+          <line x1="0" y1="-11" x2="0" y2="-8" />
+        </g>
+      );
+    case 'ring': // Consistent Hashing Ring
+      return (
+        <g stroke={color} fill="none" strokeWidth="1.8">
+          <circle cx="0" cy="0" r="10" strokeDasharray="3 3" />
+          <circle cx="0" cy="-10" r="2" fill={color} />
+          <circle cx="8" cy="5" r="2" fill={color} />
+          <circle cx="-8" cy="5" r="2" fill={color} />
+        </g>
+      );
+    case 'cache': // Cache Controller Memory RAM
+      return (
+        <g stroke={color} fill="none" strokeWidth="1.8" strokeLinecap="round">
+          <rect x="-8" y="-8" width="16" height="16" rx="2" />
+          <circle cx="0" cy="0" r="2" fill={color} />
+          <line x1="-8" y1="-4" x2="-11" y2="-4" />
+          <line x1="-8" y1="4" x2="-11" y2="4" />
+          <line x1="8" y1="-4" x2="11" y2="-4" />
+          <line x1="8" y1="4" x2="11" y2="4" />
+        </g>
+      );
+    case 'filter': // Bloom Filter Matrix
+      return (
+        <g stroke={color} fill="none" strokeWidth="1.8" strokeLinecap="round">
+          <polygon points="-10,-8 10,-8 4,2 4,9 -4,9 -4,2" />
+          <circle cx="0" cy="-3" r="1" fill={color} />
+        </g>
+      );
+    case 'circuit': // Circuit Breaker Switch
+      return (
+        <g stroke={color} fill="none" strokeWidth="2" strokeLinecap="round">
+          <circle cx="-7" cy="0" r="2" fill={color} />
+          <circle cx="7" cy="0" r="2" fill={color} />
+          <line x1="-5" y1="0" x2="3" y2="-8" />
+        </g>
+      );
+    case 'queue': // Message Queue Conveyor
+      return (
+        <g stroke={color} fill="none" strokeWidth="1.8">
+          <rect x="-10" y="-5" width="20" height="10" rx="2" />
+          <line x1="-4" y1="-5" x2="-4" y2="5" />
+          <line x1="2" y1="-5" x2="2" y2="5" />
+        </g>
+      );
+    case 'cloud': // CDN Anycast Cloud
+      return (
+        <g stroke={color} fill="none" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M-6,4 C-9,4 -10,1 -8,-1 C-9,-4 -5,-7 -2,-5 C0,-8 5,-7 6,-4 C9,-4 10,-1 8,2 C10,4 8,6 5,6 L-5,6" />
+        </g>
+      );
+    case 'shard': // Sharding Partitions
+      return (
+        <g stroke={color} fill="none" strokeWidth="1.8">
+          <rect x="-9" y="-9" width="8" height="8" rx="1" />
+          <rect x="1" y="-9" width="8" height="8" rx="1" />
+          <rect x="-9" y="1" width="8" height="8" rx="1" />
+          <rect x="1" y="1" width="8" height="8" rx="1" fill={color} />
+        </g>
+      );
+    case 'replica': // Database Replication
+      return (
+        <g stroke={color} fill="none" strokeWidth="1.8">
+          <ellipse cx="-4" cy="-4" rx="5" ry="2" />
+          <path d="M-9,-4 L-9,4 A5,2 0 0,0 1,4 L1,-4" />
+          <ellipse cx="4" cy="2" rx="4" ry="1.5" />
+          <path d="M0,2 L0,7 A4,1.5 0 0,0 8,7 L8,2" />
+        </g>
+      );
+    case 'raft': // Raft Consensus Crown
+      return (
+        <g stroke={color} fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polygon points="-8,7 8,7 10,-5 4,0 0,-7 -4,0 -10,-5" fill="none" />
+          <circle cx="0" cy="2" r="1.5" fill={color} />
+        </g>
+      );
+    case 'txn': // Distributed Transactions 2PC
+      return (
+        <g stroke={color} fill="none" strokeWidth="1.8" strokeLinecap="round">
+          <circle cx="-5" cy="-2" r="4" />
+          <circle cx="5" cy="2" r="4" />
+          <line x1="-2" y1="-2" x2="2" y2="2" />
+        </g>
+      );
+    case 'retry': // Retry Loop Backoff
+      return (
+        <g stroke={color} fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M-3,-7 A7,7 0 1,1 -7,-1" />
+          <polyline points="-8,-6 -3,-7 -4,-2" />
+        </g>
+      );
+    case 'lock': // Idempotency Padlock
+      return (
+        <g stroke={color} fill="none" strokeWidth="1.8" strokeLinecap="round">
+          <rect x="-6" y="-1" width="12" height="10" rx="2" />
+          <path d="M-4,-1 L-4,-5 A4,4 0 0,1 4,-5 L4,-1" />
+          <circle cx="0" cy="4" r="1" fill={color} />
+        </g>
+      );
+    case 'cpu': // Autoscaling CPU
+      return (
+        <g stroke={color} fill="none" strokeWidth="1.8" strokeLinecap="round">
+          <rect x="-7" y="-7" width="14" height="14" rx="2" />
+          <line x1="-3" y1="-7" x2="-3" y2="-10" />
+          <line x1="3" y1="-7" x2="3" y2="-10" />
+          <line x1="-3" y1="7" x2="-3" y2="10" />
+          <line x1="3" y1="7" x2="3" y2="10" />
+          <circle cx="0" cy="0" r="2" fill={color} />
+        </g>
+      );
+    case 'tree': // Storage Indexes B+ Tree
+      return (
+        <g stroke={color} fill="none" strokeWidth="1.8" strokeLinecap="round">
+          <circle cx="0" cy="-6" r="3" fill={color} />
+          <circle cx="-6" cy="5" r="2.5" />
+          <circle cx="6" cy="5" r="2.5" />
+          <line x1="-1.5" y1="-3.5" x2="-4.5" y2="2.5" />
+          <line x1="1.5" y1="-3.5" x2="4.5" y2="2.5" />
+        </g>
+      );
+    case 'lsm': // LSM Tree Strata
+      return (
+        <g stroke={color} fill="none" strokeWidth="1.8">
+          <rect x="-8" y="-8" width="16" height="4" rx="1" fill={color} />
+          <rect x="-9" y="-2" width="18" height="4" rx="1" />
+          <rect x="-10" y="4" width="20" height="4" rx="1" />
+        </g>
+      );
+    case 'mesh': // Gossip Peer Mesh
+      return (
+        <g stroke={color} fill="none" strokeWidth="1.8">
+          <circle cx="-6" cy="-4" r="2" fill={color} />
+          <circle cx="6" cy="-4" r="2" fill={color} />
+          <circle cx="0" cy="6" r="2" fill={color} />
+          <line x1="-4" y1="-4" x2="4" y2="-4" />
+          <line x1="-5" y1="-2" x2="-1" y2="4" />
+          <line x1="5" y1="-2" x2="1" y2="4" />
+        </g>
+      );
+    case 'split': // Load Balancer Fork
+    default:
+      return (
+        <g>
+          {/* Trunk */}
+          <line x1="0" y1="11" x2="0" y2="1" stroke={color} strokeWidth="2.5" strokeLinecap="round" />
+          {/* Left arrow branch */}
+          <path d="M 0,1 C 0,-4 -5,-8 -9,-10" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" />
+          <polyline points="-11,-6 -9,-10 -5,-10" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          {/* Right arrow branch */}
+          <path d="M 0,1 C 0,-4 5,-8 9,-10" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" />
+          <polyline points="5,-10 9,-10 11,-6" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        </g>
+      );
+  }
+}
+
+/**
  * Animated packet layer with requestAnimationFrame for smooth 60fps motion.
- * Updates DOM attributes directly to avoid re-rendering the whole React tree.
  */
 const PacketLayer: React.FC<{
   packets: FlowPacket[];
@@ -220,7 +400,6 @@ const PacketLayer: React.FC<{
     return () => mediaQuery.removeEventListener('change', handler);
   }, []);
 
-  // Update animated packet positions smoothly
   useEffect(() => {
     if (prefersReducedMotion) return;
 
@@ -234,10 +413,8 @@ const PacketLayer: React.FC<{
           const edge = edgeMap.get(p.edgeId);
           if (!circle || !edge) return;
 
-          // Smooth interpolation towards current packet progress (600ms full travel)
           const currentVisual = visualProgressRef.current.get(p.id) ?? p.progress;
           const target = p.progress;
-          // Interpolate with slight smoothing or snap
           const diff = target - currentVisual;
           const nextVisual = Math.abs(diff) < 0.005 ? target : currentVisual + diff * Math.min(1, dt / 40);
           visualProgressRef.current.set(p.id, nextVisual);
@@ -295,24 +472,39 @@ const PacketLayer: React.FC<{
 const EdgesLayer: React.FC<{ edgeGeometries: EdgeGeometry[] }> = React.memo(({ edgeGeometries }) => {
   return (
     <g className="flow-edges pointer-events-none" aria-hidden="true">
-      {edgeGeometries.map((edge) => (
-        <line
-          key={edge.id}
-          x1={edge.start.x}
-          y1={edge.start.y}
-          x2={edge.end.x}
-          y2={edge.end.y}
-          stroke="#cbd5e1"
-          strokeWidth="1.5"
-          className="dark:stroke-slate-700 transition-colors"
-        />
-      ))}
+      {edgeGeometries.map((edge) => {
+        const midX = (edge.start.x + edge.end.x) / 2;
+        const midY = (edge.start.y + edge.end.y) / 2;
+
+        return (
+          <g key={edge.id}>
+            <line
+              x1={edge.start.x}
+              y1={edge.start.y}
+              x2={edge.end.x}
+              y2={edge.end.y}
+              stroke={edge.color || '#cbd5e1'}
+              strokeWidth="1.5"
+              strokeDasharray={edge.style === 'dashed' ? '4 4' : undefined}
+              className="dark:stroke-slate-700 transition-colors"
+            />
+            {edge.label && (
+              <g transform={`translate(${midX}, ${midY})`}>
+                <rect x="-24" y="-8" width="48" height="14" rx="4" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1" className="dark:fill-slate-900 dark:stroke-slate-700" />
+                <text x="0" y="2.5" textAnchor="middle" className="text-[8px] font-mono fill-slate-500 dark:fill-slate-400">
+                  {edge.label}
+                </text>
+              </g>
+            )}
+          </g>
+        );
+      })}
     </g>
   );
 });
 
 /**
- * Source (Clients) and Hub (Balancer) nodes.
+ * Source (Clients) and Hub (Router / Controller / Filter / Buffer) nodes.
  */
 const NodesLayer: React.FC<{
   nodes: FlowNode[];
@@ -323,9 +515,11 @@ const NodesLayer: React.FC<{
 
   return (
     <g className="flow-nodes">
-      {/* Source nodes (Clients) */}
+      {/* Source nodes (Clients / Ingress) */}
       {sourceNodes.map((node) => {
         const pos = nodePositions.get(node.id) || { x: 75, y: 135 };
+        const iconColor = node.color || '#2e6930';
+
         return (
           <g key={node.id} className="select-none">
             {/* White outer circle with thin border */}
@@ -338,9 +532,9 @@ const NodesLayer: React.FC<{
               strokeWidth="1.5"
               className="dark:fill-slate-800 dark:stroke-slate-700 shadow-sm"
             />
-            {/* Globe icon */}
+            {/* Source Icon */}
             <g transform={`translate(${pos.x - 11}, ${pos.y - 11})`}>
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2e6930" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="dark:stroke-emerald-400">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={iconColor} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="dark:stroke-emerald-400">
                 <circle cx="12" cy="12" r="10" />
                 <line x1="2" y1="12" x2="22" y2="12" />
                 <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
@@ -355,43 +549,58 @@ const NodesLayer: React.FC<{
             >
               {node.label}
             </text>
+            {node.sublabel && (
+              <text x={pos.x} y={pos.y + 54} textAnchor="middle" className="text-[9px] fill-slate-400 font-mono">
+                {node.sublabel}
+              </text>
+            )}
           </g>
         );
       })}
 
-      {/* Hub nodes (Balancer) */}
+      {/* Hub nodes (Router / Controller / Filter / Buffer) */}
       {hubNodes.map((node) => {
         const pos = nodePositions.get(node.id) || { x: 195, y: 135 };
+        const hubColor = node.color || '#2e6930';
+
         return (
           <g key={node.id} className="select-none">
-            {/* Large filled green circle */}
+            {/* Hub Circle */}
             <circle
               cx={pos.x}
               cy={pos.y}
               r="34"
-              fill="#2e6930"
-              className="dark:fill-emerald-800 shadow-md"
+              fill={hubColor}
+              className="shadow-md transition-colors"
             />
-            {/* Split / Fork icon matching screenshot */}
+            {/* Distinct Pattern Icon */}
             <g transform={`translate(${pos.x}, ${pos.y})`}>
-              {/* Trunk */}
-              <line x1="0" y1="11" x2="0" y2="1" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" />
-              {/* Left arrow branch */}
-              <path d="M 0,1 C 0,-4 -5,-8 -9,-10" fill="none" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" />
-              <polyline points="-11,-6 -9,-10 -5,-10" fill="none" stroke="#ffffff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              {/* Right arrow branch */}
-              <path d="M 0,1 C 0,-4 5,-8 9,-10" fill="none" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" />
-              <polyline points="5,-10 9,-10 11,-6" fill="none" stroke="#ffffff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              {renderArchitectureIcon(node.icon, '#ffffff')}
             </g>
+            {/* Node badge if present */}
+            {node.badge && (
+              <g transform={`translate(${pos.x}, ${pos.y - 28})`}>
+                <rect x="-20" y="-7" width="40" height="14" rx="7" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1" className="dark:fill-slate-900 dark:stroke-slate-700 shadow-xs" />
+                <text x="0" y="3.5" textAnchor="middle" className="text-[8px] font-bold fill-slate-700 dark:fill-slate-200 font-mono">
+                  {node.badge}
+                </text>
+              </g>
+            )}
             {/* Node label */}
             <text
               x={pos.x}
               y={pos.y + 50}
               textAnchor="middle"
-              className="text-xs font-semibold fill-[#2e6930] dark:fill-emerald-400 font-sans tracking-tight"
+              className="text-xs font-semibold font-sans tracking-tight"
+              fill={hubColor}
             >
               {node.label}
             </text>
+            {node.sublabel && (
+              <text x={pos.x} y={pos.y + 62} textAnchor="middle" className="text-[9px] fill-slate-400 font-mono">
+                {node.sublabel}
+              </text>
+            )}
           </g>
         );
       })}
@@ -400,7 +609,7 @@ const NodesLayer: React.FC<{
 });
 
 /**
- * Server Cards stacked vertically on the right.
+ * Server & Destination Cards stacked vertically on the right.
  */
 const CardsLayer: React.FC<{
   nodes: FlowNode[];
@@ -424,6 +633,7 @@ const CardsLayer: React.FC<{
         const load = Math.max(0, Math.min(1, status.load ?? (active > 0 ? active / 10 : 0)));
 
         const loadBarWidth = Math.max(0, (bounds.width - 28) * load);
+        const cardAccent = node.color || (isAbnormal ? '#ef4444' : '#2e7d32');
 
         return (
           <g
@@ -453,7 +663,7 @@ const CardsLayer: React.FC<{
               className="dark:fill-slate-800 dark:stroke-slate-700 transition-colors shadow-sm"
             />
 
-            {/* Server name */}
+            {/* Destination Name */}
             <text
               x={bounds.x + 14}
               y={bounds.y + 20}
@@ -462,6 +672,17 @@ const CardsLayer: React.FC<{
               {node.label}
             </text>
 
+            {/* Badge or Domain tag if present */}
+            {node.badge && !isSlow && (
+              <text
+                x={bounds.x + 14 + Math.min(80, node.label.length * 8)}
+                y={bounds.y + 19}
+                className="text-[9px] font-mono font-bold fill-slate-400 tracking-tight"
+              >
+                {node.badge}
+              </text>
+            )}
+
             {/* SLOW label for accessibility and clear state */}
             {isSlow && (
               <text
@@ -469,16 +690,14 @@ const CardsLayer: React.FC<{
                 y={bounds.y + 19}
                 className="text-[10px] font-bold fill-amber-600 dark:fill-amber-500 font-sans tracking-wider"
               >
-                SLOW
+                {status.stateLabel || 'SLOW'}
               </text>
             )}
 
             {/* Status dot / shape for accessible color-independent state */}
             {isAbnormal ? (
               <g transform={`translate(${bounds.x + bounds.width - 16}, ${bounds.y + 16})`}>
-                {/* Red dot */}
                 <circle cx="0" cy="0" r="4.5" fill="#ef4444" />
-                {/* Distinct shape for accessibility (square or exclamation) */}
                 <circle cx="0" cy="0" r="2" fill="#ffffff" />
               </g>
             ) : (
@@ -486,7 +705,7 @@ const CardsLayer: React.FC<{
                 cx={bounds.x + bounds.width - 16}
                 cy={bounds.y + 16}
                 r="4.5"
-                fill="#2e7d32"
+                fill={cardAccent}
               />
             )}
 
@@ -508,17 +727,17 @@ const CardsLayer: React.FC<{
               width={loadBarWidth}
               height="3.5"
               rx="1.75"
-              fill={isAbnormal ? '#ef4444' : '#2e7d32'}
+              fill={isAbnormal ? '#ef4444' : cardAccent}
               className="transition-all duration-200"
             />
 
-            {/* Counter text: X active · Y done */}
+            {/* Detail counter text */}
             <text
               x={bounds.x + 14}
               y={bounds.y + 44}
               className="text-[10px] fill-slate-500 dark:fill-slate-400 font-sans tracking-tight"
             >
-              {`${active} active · ${done} done`}
+              {node.detail || `${active} active · ${done} done`}
             </text>
           </g>
         );
@@ -528,8 +747,7 @@ const CardsLayer: React.FC<{
 });
 
 /**
- * 3 Footer Stat Tiles matching screenshot:
- * Handled, In flight, Imbalance
+ * 3 Footer Stat Tiles matching screenshot.
  */
 const StatsFooter: React.FC<{
   stats?: FlowStats | FlowStatItem[];
@@ -570,7 +788,6 @@ const StatsFooter: React.FC<{
 
 /**
  * Generic Reusable FlowDiagram Component.
- * Driven entirely by props and rendered via clean SVG + CSS.
  */
 export const FlowDiagram: React.FC<FlowDiagramProps> = ({
   nodes,
@@ -645,10 +862,10 @@ export const FlowDiagram: React.FC<FlowDiagramProps> = ({
           {/* Animated Packets */}
           <PacketLayer packets={packets} edgeGeometries={edgeGeometries} isPaused={isPaused} />
 
-          {/* Clients & Balancer Nodes */}
+          {/* Source & Hub Nodes */}
           <NodesLayer nodes={nodes} nodePositions={nodePositions} />
 
-          {/* Server Cards */}
+          {/* Server & Destination Cards */}
           <CardsLayer
             nodes={nodes}
             cardBounds={cardBounds}
